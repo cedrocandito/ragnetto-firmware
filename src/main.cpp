@@ -8,7 +8,7 @@
 void setup()
 {
   Serial.begin(TERMINAL_BAUD);
-  setup_pwm_controllers();
+  setup_hardware();
 }
 
 void loop()

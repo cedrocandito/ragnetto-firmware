@@ -6,6 +6,7 @@
 
 void read_eeprom_block(uint16_t position, char *buffer, uint16_t size);
 bool compare_eeprom_block(uint16_t position, char *buffer, uint16_t size);
+void setup_pwm_controllers();
 
 /*
  * Array of legs; each legs contains 3 servo ids (from upper to lower leg).
@@ -33,14 +34,20 @@ uint16_t microsec_to_pwm_controller_units(uint16_t microsec)
 }
 
 /* Map radians to pwm controller units (assuming 0 radians = 1500 microseconds
- * pulse and a right angle = approx. 500 microseconds). Trim values are applied. */
+ * pulse and a right angle = approx. 500 microseconds). */
 uint16_t angle_to_pwm_controller_units(float angle)
 {
-    uint8_t microsec_trim = 0; // TODO ??? configurazione trim
-    return microsec_to_pwm_controller_units(angle * HALF_PI / PULSE_MICROS_OFFSET_90_DEG + microsec_trim);
+    return microsec_to_pwm_controller_units(angle * HALF_PI / PULSE_MICROS_OFFSET_90_DEG);
 }
 
-/** Initialize PWM controllers. */
+/* Initialize all the hardware */
+void setup_hardware()
+{
+    read_configuration();
+    setup_pwm_controllers();
+}
+
+/* Initialize PWM controllers. */
 void setup_pwm_controllers()
 {
     for (uint8_t i = 0; i < NUM_PWM_CONTROLLERS; i++)
@@ -57,7 +64,7 @@ void set_servo_position(uint8_t servo_id, float angle)
     uint8_t controller_id = servo_id / CHANNELS_PER_PWM_CONTROLLER;
     uint8_t channel = servo_id % CHANNELS_PER_PWM_CONTROLLER;
 
-    pwm[controller_id].setPWM(channel, 0, angle_to_pwm_controller_units(angle));
+    pwm[controller_id].setPWM(channel, 0, angle_to_pwm_controller_units(angle) + configuration.servo_trim[servo_id]);
 }
 
 /* Overwrite the configuration with values from EEPROM. Do not overwrite values
@@ -102,11 +109,8 @@ void reset_default_configuration()
 {
     strcpy(configuration.version, CONFIG_ID);
     configuration.config_size = sizeof(Configuration);
-    for (uint8_t leg = 0; leg < NUM_LEGS; leg++)
+    for (uint8_t servo = 0; servo < NUM_LEGS * SERVOS_PER_LEG; servo++)
     {
-        for (uint8_t servo = 0; servo < SERVOS_PER_LEG; servo++)
-        {
-            configuration.servo_trim[leg][servo] = 0;
-        }
+        configuration.servo_trim[servo] = 0;
     }
 }

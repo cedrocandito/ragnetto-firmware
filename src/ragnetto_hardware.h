@@ -31,15 +31,11 @@ struct Configuration
 {
     char version[CONFIG_ID_SIZE];
     uint16_t config_size;
-    int8_t servo_trim[NUM_LEGS][SERVOS_PER_LEG];
+    int8_t servo_trim[NUM_LEGS * SERVOS_PER_LEG];
 };
 
-/* Initialize PWM controllers. */
-void setup_pwm_controllers();
-
-/* Overwrite the configuration with values from EEPROM. Do not overwrite values
- * not defined in EEPROM (for example in case of an older, shorter configuration) */
-void read_configuration();
+/* Initialize all the hardware. */
+void setup_hardware();
 
 /* Reset the configuration to default values. */
 void reset_default_configuration();
