@@ -12,20 +12,6 @@ bool compare_eeprom_block(uint16_t position, uint8_t *buffer, uint16_t size);
 void setup_pwm_controllers();
 void setup_console();
 
-/*
- * Array of legs; each legs contains 3 servo ids (from upper to lower leg).
- * Servo id 0-15 are for PWM controller 0, 16-31 are for PWM controller 1.
- * Legs are numbered from top left, counterclockwise (so upper right is #5).
- */
-const uint8_t legs[NUM_LEGS][SERVOS_PER_LEG] =
-    {
-        {20, 21, 22},
-        {23, 24, 25},
-        {26, 27, 28},
-        {4, 5, 6},
-        {7, 8, 9},
-        {10, 11, 12}};
-
 struct Configuration configuration;
 
 /* PWM controllers. */
