@@ -40,6 +40,8 @@ void setup_hardware();
 /* Reset the configuration to default values. */
 void reset_default_configuration();
 
+/* Set the position (angle) of one servo, using servo_id. Trim values are applied. */
+void set_servo_position(uint8_t servo_id, float angle);
 
 
 #endif

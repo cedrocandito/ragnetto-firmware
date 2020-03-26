@@ -1,9 +1,8 @@
 #include <Arduino.h>
-#include <Wire.h>
-#include <Adafruit_PWMServoDriver.h>
 #include "ragnetto_framework.h"
-#include "ragnetto_hardware.h"
+#include "logging.h"
 
+Ragnetto ragnetto;
 
 void setup()
 {
@@ -11,7 +10,30 @@ void setup()
   setup_hardware();
 }
 
+
+#define STEP 1
+Point3d p(0.0, 0.0, -9.0);
 void loop()
 {
-  // put your main code here, to run repeatedly:
+  if (Serial && Serial.available())
+  {
+    int c = Serial.read();
+    switch(c)
+    {
+      case '+': p.z+=STEP;
+        break;
+      case '-': p.z-=STEP;
+        break;
+      case 'a': p.x-=STEP;
+        break;
+      case 'd': p.x+=STEP;
+        break;
+      case 'w': p.y+=STEP;
+        break;
+      case 's': p.y-=STEP;
+        break;
+    }
+    ragnetto.legs[1].moveTo(p);
+
+  }
 }
