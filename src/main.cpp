@@ -11,8 +11,8 @@ void setup()
 }
 
 
-#define STEP 1
-Point3d p(0.0, 0.0, -9.0);
+#define STEP 5
+Point3d p(-50.0, 0.0, -90.0);
 void loop()
 {
   if (Serial && Serial.available())

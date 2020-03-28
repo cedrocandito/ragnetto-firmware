@@ -29,7 +29,7 @@
 
 // minimum and maximum angle for the third joint (radians)
 #define JOINT3_MAX_ANGLE HALF_PI
-#define JOINT3_MIN_ANGLE (-(TWO_PI * 360.0) / 30.0)
+#define JOINT3_MIN_ANGLE (-TWO_PI * 30.0 / 360.0)
 // offset to be subtracted from the joint 2 angle to get the servo angle (radians)
 #define JOINT3_OFFSET -HALF_PI
 

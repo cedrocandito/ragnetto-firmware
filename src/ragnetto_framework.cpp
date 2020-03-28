@@ -177,11 +177,9 @@ void Leg::moveTo(const Point3d &point)
         LOGN(angles[2]);
         LOGS(")");
 
-        /*
         set_servo_position(legs[leg_id][0],angles[0]);
         set_servo_position(legs[leg_id][1],angles[1]);
-        set_servo_position(legs[leg_id][2],angles[2]);
-        */
+        set_servo_position(legs[leg_id][2],angles[2]);  
     }
     else
     {
@@ -253,7 +251,7 @@ bool pointIn3dSpaceToJointAngles(const Point3d &p, const Leg &leg, float result_
 
     Point2d pp(sqrt(pj2.x * pj2.x + pj2.y * pj2.y), p.z);
 
-    /* inverse cinematics for joint 2 and 3 */
+    /* inverse kinematics for joint 2 and 3 */
     const float cosb = (pp.x * pp.x + pp.y * pp.y - LEG_SEGMENT_2_LENGTH * LEG_SEGMENT_2_LENGTH - LEG_SEGMENT_3_LENGTH * LEG_SEGMENT_3_LENGTH) / (2 * LEG_SEGMENT_2_LENGTH * LEG_SEGMENT_3_LENGTH);
 
     /* check if the point is out of reach (no solution) */

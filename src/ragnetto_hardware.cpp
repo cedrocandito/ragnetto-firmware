@@ -17,17 +17,12 @@ struct Configuration configuration;
 /* PWM controllers. */
 Adafruit_PWMServoDriver pwm[NUM_PWM_CONTROLLERS];
 
-/* Map pulse microseconds to pwm controller units (0-4096). */
-uint16_t microsec_to_pwm_controller_units(uint16_t microsec)
-{
-    return 4096L * microsec * FREQ / 1000000;
-}
 
 /* Map radians to pwm controller units (assuming 0 radians = 1500 microseconds
  * pulse and a right angle = approx. 500 microseconds). */
 uint16_t angle_to_pwm_controller_units(float angle)
 {
-    return microsec_to_pwm_controller_units(angle * HALF_PI / PULSE_MICROS_OFFSET_90_DEG);
+    return RADIANS_TO_PWM_CONTROLLER_UNITS(angle);
 }
 
 /* Initialize all the hardware */
@@ -73,7 +68,21 @@ void set_servo_position(uint8_t servo_id, float angle)
     uint8_t controller_id = servo_id / CHANNELS_PER_PWM_CONTROLLER;
     uint8_t channel = servo_id % CHANNELS_PER_PWM_CONTROLLER;
 
-    pwm[controller_id].setPWM(channel, 0, angle_to_pwm_controller_units(angle) + configuration.servo_trim[servo_id]);
+    //??????????????????
+    LOGLN();
+    LOGS("Channel ");
+    LOGN(controller_id);
+    LOGS(":");
+    LOGN(channel);
+    LOGS(" set to ");
+    LOGN(angle);
+    LOGS(" rad,  ");
+    LOGN(angle * PULSE_MICROS_OFFSET_90_DEG / HALF_PI + PULSE_MICROS_CENTER);
+    LOGS(" micros,  ");
+    LOGN(angle_to_pwm_controller_units(angle));
+    LOGSLN(" units");
+
+    pwm[controller_id].setPWM(channel, 0, angle_to_pwm_controller_units(angle));
 }
 
 /* Overwrite the configuration with values from EEPROM. Do not overwrite values
