@@ -1,8 +1,8 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <Adafruit_PWMServoDriver.h>
-#include <EEPROM.h>
 #include "ragnetto_hardware.h"
+#include "ragnetto_config.h"
 #include "logging.h"
 
 // local functions (not public)
@@ -12,7 +12,7 @@ bool compare_eeprom_block(uint16_t position, uint8_t *buffer, uint16_t size);
 void setup_pwm_controllers();
 void setup_console();
 
-struct Configuration configuration;
+static Configuration configuration;
 
 /* PWM controllers. */
 Adafruit_PWMServoDriver pwm[NUM_PWM_CONTROLLERS];
@@ -29,7 +29,6 @@ uint16_t angle_to_pwm_controller_units(float angle)
 void setup_hardware()
 {
     setup_console();
-    read_configuration();
     setup_pwm_controllers();
     LOGSLN("Hardware setup complete.");
 }
@@ -83,54 +82,4 @@ void set_servo_position(uint8_t servo_id, float angle)
     LOGSLN(" units");
 
     pwm[controller_id].setPWM(channel, 0, angle_to_pwm_controller_units(angle));
-}
-
-/* Overwrite the configuration with values from EEPROM. Do not overwrite values
- * not defined in EEPROM (for example in case of an older, shorter configuration) */
-void read_configuration()
-{
-    reset_default_configuration();
-    if (compare_eeprom_block(CONFIG_BASE_ADDR, (uint8_t*)configuration.version, CONFIG_ID_SIZE))
-    {
-        // configuration is valid, read it
-        LOGSLN("Configuration in EEPROM is valid");
-        read_eeprom_block(CONFIG_BASE_ADDR, (char*)&configuration, sizeof(configuration));
-    }
-    else
-    {
-        // configuration is not valid, keep default
-        LOGSLN("Configuration in EEPROM is not valid. Default values will be used.");
-    }
-}
-
-/* Read a block of bytes from EEPROM into a buffer. */
-void read_eeprom_block(uint16_t position, char *buffer, uint16_t size)
-{
-    for (uint16_t i = 0; i < size; i++)
-    {
-        *buffer++ = EEPROM.read(position + i);
-    }
-}
-
-/* Compare a block of bytes from EEPROM to the content of a buffer.
-return true if they are the same. */
-bool compare_eeprom_block(uint16_t position, uint8_t *buffer, uint16_t size)
-{
-    for (uint16_t i = 0; i < size; i++)
-    {
-        if (*buffer++ != EEPROM.read(position + i))
-            return false;
-    }
-    return true;
-}
-
-/* Reset the configuration to default values. */
-void reset_default_configuration()
-{
-    strcpy(configuration.version, CONFIG_ID);
-    configuration.config_size = sizeof(Configuration);
-    for (uint8_t servo = 0; servo < NUM_LEGS * SERVOS_PER_LEG; servo++)
-    {
-        configuration.servo_trim[servo] = 0;
-    }
 }

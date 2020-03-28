@@ -30,28 +30,13 @@
 /* angle corresponding to one PWM controller unit */
 #define TRIM_ANGLE_UNIT (HALF_PI / MICROSEC_TO_PWM_CONTROLLER_UNITS(1) / PULSE_MICROS_OFFSET_90_DEG)
 
-
 #define TERMINAL_BAUD 9600
 
-#define CONFIG_ID_SIZE 9+1
-#define CONFIG_ID "RAGNETTO"
-#define CONFIG_BASE_ADDR 0
-
-struct Configuration
-{
-    char version[CONFIG_ID_SIZE];
-    uint16_t config_size;
-    int8_t servo_trim[NUM_LEGS * SERVOS_PER_LEG];
-};
 
 /* Initialize all the hardware. */
 void setup_hardware();
 
-/* Reset the configuration to default values. */
-void reset_default_configuration();
-
 /* Set the position (angle) of one servo, using servo_id. Trim values are applied. */
 void set_servo_position(uint8_t servo_id, float angle);
-
 
 #endif

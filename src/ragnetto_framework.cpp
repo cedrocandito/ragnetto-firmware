@@ -1,7 +1,9 @@
 #include <Arduino.h>
 #include "ragnetto_framework.h"
 #include "ragnetto_hardware.h"
+#include "ragnetto_config.h"
 #include "logging.h"
+
 
 /*
  * Array of legs; each legs contains 3 servo ids (from upper to lower leg).
@@ -9,7 +11,7 @@
  * Legs are numbered zero-based from front left, counterclockwise
  * (so front right is #5).
  */
-const uint8_t legs[NUM_LEGS][SERVOS_PER_LEG] =
+static const uint8_t legs[NUM_LEGS][SERVOS_PER_LEG] =
     {
         {20, 21, 22},
         {23, 24, 25},
@@ -17,7 +19,6 @@ const uint8_t legs[NUM_LEGS][SERVOS_PER_LEG] =
         {4, 5, 6},
         {7, 8, 9},
         {10, 11, 12}};
-
 
 /* Normalize an angle to the range 0 - 2*PI; optimized for angles just out of the range */
 float normalize_0_to_2pi(float a)
