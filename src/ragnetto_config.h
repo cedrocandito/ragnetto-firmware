@@ -2,8 +2,8 @@
 #define RAGNETTO_CONFIG_H
 
 #include <arduino.h>
-#include "ragnetto_hardware.h"
 #include "logging.h"
+#include "ragnetto.h"
 
 #define CONFIG_ID_SIZE 9+1
 #define CONFIG_ID "RAGNETTO"
