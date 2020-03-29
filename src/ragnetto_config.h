@@ -1,5 +1,5 @@
-#ifndef ragnetto_config_h
-#define ragnetto_config_h
+#ifndef RAGNETTO_CONFIG_H
+#define RAGNETTO_CONFIG_H
 
 #include <arduino.h>
 #include "ragnetto_hardware.h"

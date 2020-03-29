@@ -1,14 +1,10 @@
-
-#ifndef ragnetto_hardware_h
-#define ragnetto_hardware_h
+#ifndef RAGNETTO_HARDWARE_H
+#define RAGNETTO_HARDWARE_H
 
 #include <Arduino.h>
 #include <Wire.h>
 #include <Adafruit_PWMServoDriver.h>
-
-
-#define NUM_LEGS 6
-#define SERVOS_PER_LEG 3
+#include "ragnetto.h"
 
 #define NUM_PWM_CONTROLLERS 2
 #define CHANNELS_PER_PWM_CONTROLLER 16

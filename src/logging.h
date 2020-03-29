@@ -1,5 +1,5 @@
-#ifndef logging_h
-#define logging_h
+#ifndef LOGGING_H
+#define LOGGING_H
 
 #define LOGGING_ENABLED
 
