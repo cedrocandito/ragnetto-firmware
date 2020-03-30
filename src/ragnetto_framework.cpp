@@ -166,6 +166,7 @@ void Leg::moveTo(const Point3d &point)
     LOGS(", ");
     LOGN(point.z);
     LOGS("]: ");
+ 
     float angles[3];
     bool ok = pointIn3dSpaceToJointAngles(point, *this, angles);
     if (ok)
@@ -177,10 +178,10 @@ void Leg::moveTo(const Point3d &point)
         LOGS(", ");
         LOGN(angles[2]);
         LOGS(")");
-
+    
         set_servo_position(legs[leg_id][0],angles[0]);
-        set_servo_position(legs[leg_id][1],angles[1]);
-        set_servo_position(legs[leg_id][2],angles[2]);  
+        set_servo_position(legs[leg_id][1],angles[1]-JOINT2_OFFSET);
+        set_servo_position(legs[leg_id][2],angles[2]-JOINT3_OFFSET);
     }
     else
     {
@@ -222,7 +223,7 @@ bool pointIn3dSpaceToJointAngles(const Point3d &p, const Leg &leg, float result_
 
     /* subtracting the previous angle from the attachment angle of the leg we can
     calculate the servo rotation needed for the first joint */
-    float joint1_angle = h_angle - leg.attachmentAngle;
+    float joint1_angle = normalize_minus_pi_plus_pi(h_angle - leg.attachmentAngle);
 
     /* if the foot would point toward the inside of the body, use an angle which
     is 180 degrees from the previously calculated one (the servo cannot move
@@ -231,7 +232,7 @@ bool pointIn3dSpaceToJointAngles(const Point3d &p, const Leg &leg, float result_
     {
         h_angle = normalize_minus_pi_plus_pi(h_angle + PI);
         // recalculate the joint angle
-        joint1_angle = h_angle - leg.attachmentAngle;
+        joint1_angle = normalize_minus_pi_plus_pi(h_angle - leg.attachmentAngle);
     }
 
     /* check if the servo rotation is within limits */
@@ -258,7 +259,7 @@ bool pointIn3dSpaceToJointAngles(const Point3d &p, const Leg &leg, float result_
     /* check if the point is out of reach (no solution) */
     if (abs(cosb) > 1.0)
         return false;
-
+    
     // 2 solutions for square root
     const float sinb1 = sqrt(1 - cosb * cosb);
     const float sinb2 = -sinb1;
@@ -267,42 +268,32 @@ bool pointIn3dSpaceToJointAngles(const Point3d &p, const Leg &leg, float result_
     if (abs(sinb1) > 1.0)
         return false;
 
-    float c1 = atan2(sinb1, cosb);
-    float c2 = atan2(sinb2, cosb);
+    float l = atan2(pp.y, pp.x);
 
-    if ((c1 >= JOINT3_MIN_ANGLE) && (c1 <= JOINT3_MAX_ANGLE))
-    {
-        // solution 1 is ok
-        result_angles[2] = c1;
-    }
-    else if ((c2 >= JOINT3_MIN_ANGLE) && (c2 <= JOINT3_MAX_ANGLE))
+    // solution 2 is more likely to happen, so calculate that one first
+    float c = atan2(sinb2, cosb);
+    float b = l - atan2(LEG_SEGMENT_3_LENGTH * sinb2, LEG_SEGMENT_2_LENGTH + LEG_SEGMENT_3_LENGTH * cosb);
+    if ((c >= JOINT3_MIN_ANGLE) && (c <= JOINT3_MAX_ANGLE) && (b >= JOINT2_MIN_ANGLE) && (b <= JOINT2_MAX_ANGLE))
     {
         // solution 2 is ok
-        result_angles[2] = c2;
+        result_angles[1] = b;
+        result_angles[2] = c;
     }
     else
     {
-        // no solution is good
-        return false;
-    }
-
-    float b1 = atan2(pp.y, pp.x) - atan2(LEG_SEGMENT_3_LENGTH * sinb1, LEG_SEGMENT_2_LENGTH + LEG_SEGMENT_3_LENGTH * cosb);
-    float b2 = atan2(pp.y, pp.x) - atan2(LEG_SEGMENT_3_LENGTH * sinb2, LEG_SEGMENT_2_LENGTH + LEG_SEGMENT_3_LENGTH * cosb);
-
-    if ((b1 >= JOINT2_MIN_ANGLE) && (b1 <= JOINT2_MAX_ANGLE))
-    {
-        // solution 1 is ok
-        result_angles[1] = b1;
-    }
-    else if ((b2 >= JOINT2_MIN_ANGLE) && (b2 <= JOINT2_MAX_ANGLE))
-    {
-        // solution 2 is ok
-        result_angles[1] = b2;
-    }
-    else
-    {
-        // no solution is good
-        return false;
+        float c = atan2(sinb1, cosb);
+        float b = l - atan2(LEG_SEGMENT_3_LENGTH * sinb1, LEG_SEGMENT_2_LENGTH + LEG_SEGMENT_3_LENGTH * cosb);
+        if ((c >= JOINT3_MIN_ANGLE) && (c <= JOINT3_MAX_ANGLE) && (b >= JOINT2_MIN_ANGLE) && (b <= JOINT2_MAX_ANGLE))
+        {
+            // solution 1 is ok
+            result_angles[1] = b;
+            result_angles[2] = c;
+        }
+        else
+        {
+            // no solution is good
+            return false;
+        }
     }
 
     if (leg.invertServo)

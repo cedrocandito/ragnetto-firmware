@@ -68,6 +68,7 @@ void set_servo_position(uint8_t servo_id, float angle)
     uint8_t channel = servo_id % CHANNELS_PER_PWM_CONTROLLER;
 
     //??????????????????
+    /*
     LOGLN();
     LOGS("Channel ");
     LOGN(controller_id);
@@ -80,6 +81,7 @@ void set_servo_position(uint8_t servo_id, float angle)
     LOGS(" micros,  ");
     LOGN(angle_to_pwm_controller_units(angle));
     LOGSLN(" units");
+    */
 
     pwm[controller_id].setPWM(channel, 0, angle_to_pwm_controller_units(angle));
 }
