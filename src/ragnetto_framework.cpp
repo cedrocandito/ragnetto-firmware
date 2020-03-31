@@ -180,8 +180,8 @@ void Leg::moveTo(const Point3d &point)
         LOGS(")");
     
         set_servo_position(legs[leg_id][0],angles[0]);
-        set_servo_position(legs[leg_id][1],angles[1]-JOINT2_OFFSET);
-        set_servo_position(legs[leg_id][2],angles[2]-JOINT3_OFFSET);
+        set_servo_position(legs[leg_id][1],angles[1]+(invertServo ? JOINT2_OFFSET:-JOINT2_OFFSET));
+        set_servo_position(legs[leg_id][2],angles[2]+(invertServo ? JOINT3_OFFSET:-JOINT3_OFFSET));
     }
     else
     {
