@@ -37,15 +37,19 @@ void setup_hardware()
 void setup_console()
 {
     Serial.begin(TERMINAL_BAUD);
+    #ifdef LOGGING_ENABLED
     unsigned long t1 = micros();
+    #endif
     while(!Serial)
     {
         delay(2);
     }
+    #ifdef LOGGING_ENABLED
     unsigned long t2 = micros();
     LOGS("Had to wait ");
     LOGN(t2-t1);
     LOGSLN(" microseconds for the console serial port to become active.");
+    #endif
 }
 
 /* Initialize PWM controllers. */
