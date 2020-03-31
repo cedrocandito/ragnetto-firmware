@@ -19,7 +19,7 @@
 #define LEG_SEGMENT_3_LENGTH 70.0
 
 // minimum and maximum angle for the first joint (radians)
-#define JOINT1_MAX_ANGLE (TWO_PI * 40 / 360.0)
+#define JOINT1_MAX_ANGLE (DEG_TO_RAD * 40)
 #define JOINT1_MIN_ANGLE (-JOINT1_MAX_ANGLE)
 
 // minimum and maximum angle for the second joint (radians)
@@ -30,7 +30,7 @@
 
 // minimum and maximum angle for the third joint (radians)
 #define JOINT3_MAX_ANGLE 0
-#define JOINT3_MIN_ANGLE (-HALF_PI -TWO_PI * 30.0 / 360.0)
+#define JOINT3_MIN_ANGLE (-HALF_PI -DEG_TO_RAD * 30)
 // offset to be subtracted from the joint 3 angle to get the servo angle (radians)
 #define JOINT3_OFFSET -HALF_PI
 

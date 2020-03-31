@@ -241,17 +241,21 @@ bool pointIn3dSpaceToJointAngles(const Point3d &p, const Leg &leg, float result_
 
     result_angles[0] = joint1_angle;
 
-    /* calculate the attachment point of joint 2 */
-    Point2d joint2attachment(cos(h_angle) * LEG_SEGMENT_1_LENGTH, sin(h_angle) * LEG_SEGMENT_1_LENGTH);
+    float cosa = cos(h_angle);
+    float sina = sin(h_angle);
 
-    /* distance from target point to joint 2 attachment */
-    Point2d pj2 = Point2d(p.x - joint2attachment.x, p.y - joint2attachment.y);
+    /* calculate the attachment point of joint 2 */
+    Point2d joint2attachment(cosa * LEG_SEGMENT_1_LENGTH, sina * LEG_SEGMENT_1_LENGTH);
 
     /* now let's image a vertical plane along the line between the destination
     point and joint 2.; p.x in this plane corresponds to the distance between p and
     joint 2 attachment position (0, 0) and y corresponds to real-world p.z */
 
-    Point2d pp(sqrt(pj2.x * pj2.x + pj2.y * pj2.y), p.z);
+    float l = sqrt(p.x * p.x + p.y * p.y);
+    // correction for target points beyond the leg attachment point (toward the body) 
+    if ((signbit(sina) != signbit(p.y)) && (signbit(cosa)!=signbit(p.x)))
+        l=-l;
+    Point2d pp(l - LEG_SEGMENT_1_LENGTH, p.z);
 
     /* inverse kinematics for joint 2 and 3 */
     const float cosb = (pp.x * pp.x + pp.y * pp.y - LEG_SEGMENT_2_LENGTH * LEG_SEGMENT_2_LENGTH - LEG_SEGMENT_3_LENGTH * LEG_SEGMENT_3_LENGTH) / (2 * LEG_SEGMENT_2_LENGTH * LEG_SEGMENT_3_LENGTH);
@@ -268,11 +272,11 @@ bool pointIn3dSpaceToJointAngles(const Point3d &p, const Leg &leg, float result_
     if (abs(sinb1) > 1.0)
         return false;
 
-    float l = atan2(pp.y, pp.x);
+    float v_ang = atan2(pp.y, pp.x);
 
     // solution 2 is more likely to happen, so calculate that one first
     float c = atan2(sinb2, cosb);
-    float b = l - atan2(LEG_SEGMENT_3_LENGTH * sinb2, LEG_SEGMENT_2_LENGTH + LEG_SEGMENT_3_LENGTH * cosb);
+    float b = v_ang - atan2(LEG_SEGMENT_3_LENGTH * sinb2, LEG_SEGMENT_2_LENGTH + LEG_SEGMENT_3_LENGTH * cosb);
     if ((c >= JOINT3_MIN_ANGLE) && (c <= JOINT3_MAX_ANGLE) && (b >= JOINT2_MIN_ANGLE) && (b <= JOINT2_MAX_ANGLE))
     {
         // solution 2 is ok
@@ -282,7 +286,7 @@ bool pointIn3dSpaceToJointAngles(const Point3d &p, const Leg &leg, float result_
     else
     {
         float c = atan2(sinb1, cosb);
-        float b = l - atan2(LEG_SEGMENT_3_LENGTH * sinb1, LEG_SEGMENT_2_LENGTH + LEG_SEGMENT_3_LENGTH * cosb);
+        float b = v_ang - atan2(LEG_SEGMENT_3_LENGTH * sinb1, LEG_SEGMENT_2_LENGTH + LEG_SEGMENT_3_LENGTH * cosb);
         if ((c >= JOINT3_MIN_ANGLE) && (c <= JOINT3_MAX_ANGLE) && (b >= JOINT2_MIN_ANGLE) && (b <= JOINT2_MAX_ANGLE))
         {
             // solution 1 is ok
