@@ -10,7 +10,7 @@
 #define LEG_ATTACHMENT_RADIUS 77.0
 
 // distance between the first axis (horizontal movement) and the next (mm)
-#define LEG_SEGMENT_1_LENGTH 27.0
+#define LEG_SEGMENT_1_LENGTH 29.28
 
 // distance between second axis and the last (third) one (mm)
 #define LEG_SEGMENT_2_LENGTH 70.0
