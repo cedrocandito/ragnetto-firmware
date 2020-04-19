@@ -16,10 +16,6 @@ class Point3d
     Point3d();
     Point3d(const float newx, const float newy, const float newz);
     Point3d(const Point3d &p);
-    void subtract(const Point3d &p);
-    void add(const Point3d &p);
-    float dotProduct(const Point3d &p);
-    float norm();
 };
 
 class Point2d
@@ -28,14 +24,10 @@ class Point2d
     float x;
     float y;
 
+    Point2d();
     Point2d(const float newx, const float newy);
     Point2d(const Point3d &p3d);
-    Point2d();
     Point2d(const Point2d &p);
-    void subtract(const Point2d p);
-    void add(const Point2d p);
-    float dotProduct(const Point2d p);
-    float norm();
 };
 
 class Leg

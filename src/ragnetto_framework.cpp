@@ -73,31 +73,6 @@ Point3d::Point3d(const Point3d &p)
     z = p.z;
 }
 
-void Point3d::subtract(const Point3d &p)
-{
-    x = x - p.x;
-    y = y - p.y;
-    z = z - p.z;
-}
-
-void Point3d::add(const Point3d &p)
-{
-    x = x + p.x;
-    y = y + p.y;
-    z = z + p.z;
-}
-
-float Point3d::dotProduct(const Point3d &p)
-{
-    return sqrt(x * p.x + y * p.y + z * p.z);
-}
-
-float Point3d::norm()
-{
-    return sqrt(x * x + y * y + z * z);
-}
-
-
 Point2d::Point2d(const float newx, const float newy)
 {
     x = newx;
@@ -120,28 +95,6 @@ Point2d::Point2d(const Point2d &p)
 {
     x = p.x;
     y = p.y;
-}
-
-void Point2d::subtract(const Point2d p)
-{
-    x = x - p.x;
-    y = y - p.y;
-}
-
-void Point2d::add(const Point2d p)
-{
-    x = x + p.x;
-    y = y + p.y;
-}
-
-float Point2d::dotProduct(const Point2d p)
-{
-    return sqrt(x * p.x + y * p.y);
-}
-
-float Point2d::norm()
-{
-    return sqrt(x * x + y * y);
 }
 
 
