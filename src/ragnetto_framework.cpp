@@ -211,7 +211,9 @@ bool pointIn3dSpaceToJointAngles(const Point3d &p, const Leg &leg, float result_
     Point2d pp(l - LEG_SEGMENT_1_LENGTH, p.z);
 
     /* inverse kinematics for joint 2 and 3 */
-    const float cosb = (pp.x * pp.x + pp.y * pp.y - LEG_SEGMENT_2_LENGTH * LEG_SEGMENT_2_LENGTH - LEG_SEGMENT_3_LENGTH * LEG_SEGMENT_3_LENGTH) / (2 * LEG_SEGMENT_2_LENGTH * LEG_SEGMENT_3_LENGTH);
+    const float cosb = (pp.x * pp.x + pp.y * pp.y
+        - LEG_SEGMENT_2_LENGTH * LEG_SEGMENT_2_LENGTH
+        - LEG_SEGMENT_3_LENGTH * LEG_SEGMENT_3_LENGTH) / (2 * LEG_SEGMENT_2_LENGTH * LEG_SEGMENT_3_LENGTH);
 
     /* check if the point is out of reach (no solution) */
     if (abs(cosb) > 1.0)
