@@ -37,12 +37,46 @@ class Leg
     Point3d attachmentPosition;
     float attachmentAngle; // range is from -PI to +PI (the same atan2() uses)
     bool invertServo;      // true for legs that have joints 2 and 3 mounted in the opposite direction
+    Point3d currentPosition;    // last moveTo() position
 
     // setup leg position and angle
     void setup(const uint8_t id, bool invert);
     
     // move servos to indicated position (relative to leg attachment point)
     void moveTo(const Point3d &point);
+};
+
+class LegMove
+{
+    protected:
+    Point3d startPoint;
+    Point3d endPoint;
+
+    public:
+    /* Interpolate middle points during the move. "progress" is 0.0 at segment start and 1.0 at segment end. */
+    virtual void interpolatePosition(float progress, Point3d &destination);
+};
+
+class LinearLegMove : public LegMove
+{
+     void interpolatePosition(float progress, Point3d &destination);
+};
+
+class QuadraticUpwardLegMove : public LegMove
+{
+     void interpolatePosition(float progress, Point3d &destination);
+};
+
+/* Moves fot all the six legs. */
+class CoordinatedMove
+{
+    public:
+    unsigned long startMillis;
+    unsigned long endMillis;
+    LegMove legMovements[NUM_LEGS];
+
+    void interpolatePositions(unsigned long millis, Point3d destinationPoints[NUM_LEGS]);
+    bool stillRunning(unsigned long millis);
 };
 
 class Ragnetto
