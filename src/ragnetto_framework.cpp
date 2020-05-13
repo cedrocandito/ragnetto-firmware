@@ -12,13 +12,14 @@
  * (so front right is #5).
  */
 static const uint8_t legs[NUM_LEGS][SERVOS_PER_LEG] =
-    {
-        {20, 21, 22},
-        {23, 24, 25},
-        {26, 27, 28},
-        {4, 5, 6},
-        {7, 8, 9},
-        {10, 11, 12}};
+{
+    {16, 17, 18},
+    {19, 20, 21},
+    {22, 23, 24},
+    {0, 1, 2},
+    {3, 4, 5},
+    {6, 7, 8}
+};
 
 /* Normalize an angle to the range 0 - 2*PI; optimized for angles just out of the range */
 float normalize_0_to_2pi(float a)
@@ -112,13 +113,15 @@ void Leg::setup(const uint8_t id, bool invert)
 // move servos to indicated position (relative to leg attachment point)
 void Leg::moveTo(const Point3d &point)
 {
-    LOGS("[");
+    LOGS("Leg ");
+    LOGN(leg_id);
+    LOGS(" [");
     LOGN(point.x);
     LOGS(", ");
     LOGN(point.y);
     LOGS(", ");
     LOGN(point.z);
-    LOGS("]: ");
+    LOGS("mm]: ");
  
     float angles[3];
     bool ok = pointIn3dSpaceToJointAngles(point, *this, angles);
@@ -130,15 +133,16 @@ void Leg::moveTo(const Point3d &point)
         LOGN(angles[1]);
         LOGS(", ");
         LOGN(angles[2]);
-        LOGS(")");
+        LOGS(" rad)");
     
+        currentPosition = Point3d(point);
         set_servo_position(legs[leg_id][0],angles[0]);
         set_servo_position(legs[leg_id][1],angles[1]+(invertServo ? JOINT2_OFFSET:-JOINT2_OFFSET));
         set_servo_position(legs[leg_id][2],angles[2]+(invertServo ? JOINT3_OFFSET:-JOINT3_OFFSET));
     }
     else
     {
-        LOGS("Fuori portata");
+        LOGS("out of reach");
     }
 
     LOGLN();
@@ -152,18 +156,26 @@ Ragnetto::Ragnetto()
     }
 }
 
-class MovementSegment
+void LinearLegMove::interpolatePosition(float progress, Point3d &destination)
 {
-    Point3d startPositions[NUM_LEGS];
-    Point3d endPositions[NUM_LEGS];
-    long startTime;
-    long endTime;
-};
+    destination.x = (endPoint.x - startPoint.x) * progress + startPoint.x;
+    destination.y = (endPoint.y - startPoint.y) * progress + startPoint.y;
+    destination.z = (endPoint.z - startPoint.z) * progress + startPoint.z;
+}
 
-class Bevaviour
+void CoordinatedMove::interpolatePositions(unsigned long millis, Point3d destinationPoints[NUM_LEGS])
 {
-    virtual void work();
-};
+    float progress = (float)(millis - startMillis)/(float)(endMillis - startMillis);
+    for (int i=0; i<NUM_LEGS; i++)
+    {
+        legMovements[i].interpolatePosition(progress, destinationPoints[i]);
+    }
+}
+
+bool CoordinatedMove::stillRunning(unsigned long millis)
+{
+    return millis < endMillis;
+}
 
 /* Calculate the angles to be applied to the joints in order to move the leg to
 a point in space. Coordinates are relative to attachment point of the leg, angles are absolute.
