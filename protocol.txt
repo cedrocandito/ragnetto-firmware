@@ -1,0 +1,25 @@
+Serial protocol
+===============
+
+All numbers are decimal, signed, one byte (-128...+127).
+Lines are terminated by LF (0x0a).
+
+Txxx;hhh
+  set trim value for servo xx to hh.
+
+Hxxx
+  set body height offset to xxx millimeters.
+
+S
+  save configuration
+
+Jyyy;xxx;rrr
+  Set joystick; drive using forward/backward speed yyy (positive is
+  forward), left/right speed xxx (positive is right) and rotation
+  speed rrr (positive is counterclockwise).
+
+Mxxx
+  Set working mode to xxx:
+  00 = stance,
+  01 = calibration,
+  02 = joystick
