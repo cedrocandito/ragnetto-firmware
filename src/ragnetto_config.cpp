@@ -3,6 +3,10 @@
 #include "ragnetto_config.h"
 #include "logging.h"
 
+// configuration instance */
+Configuration configuration;
+
+
 /* Constructor */
 Configuration::Configuration()
 {
@@ -29,7 +33,7 @@ void Configuration::read()
 }
 
 /* Write in-memory configuration to EEPROM. */
-void write()
+void Configuration::write()
 {
     LOGSLN("Configuration::write not yet implemented!!");
 }
@@ -67,4 +71,5 @@ void Configuration::restore_default()
             servo_trim[leg][servo] = 0;
         }
     }
+    height_offset = 0;
 }

@@ -3,15 +3,29 @@ Serial protocol
 
 All numbers are decimal, signed, one byte (-128...+127).
 Lines are terminated by LF (0x0a).
+Output is the first letter of the command followed by:
+   OK (command was accepted)
+   ERROR (there was an error processingthe command)
+   custom data depending on the command
 
-Txxx;hhh
-  set trim value for servo xx to hh.
+
+Txx;vvv
+  set trim value for servo xx (zero based) to vvv.
 
 Hxxx
   set body height offset to xxx millimeters.
 
-S
-  save configuration
+R
+  Read configuration from EEPROM.
+
+W
+  Write configuration to EEPROM.
+
+C
+  Show configuration.
+  Custom data in output is a line of semicolon-separated numbers:
+  0-17: trim for servos 1-18
+  18: height offset
 
 Jyyy;xxx;rrr
   Set joystick; drive using forward/backward speed yyy (positive is

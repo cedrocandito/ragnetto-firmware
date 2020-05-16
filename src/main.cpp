@@ -1,16 +1,23 @@
 #include <Arduino.h>
 #include "ragnetto_framework.h"
 #include "logging.h"
+#include "serial.h"
 
 Ragnetto ragnetto;
 
 void setup()
 {
-  Serial.begin(TERMINAL_BAUD);
+  serial_begin();
   setup_hardware();
 }
 
+void loop()
+{
+  ragnetto.run();
+}
 
+/*
+//????????????????
 void loop()
 {
   float a = (millis() % (int)(PI*1000)) * 2.0 / 1000.0 * 2.0;
@@ -28,6 +35,7 @@ void loop()
   }
   delay(10);
 }
+*/
 
 /*
 

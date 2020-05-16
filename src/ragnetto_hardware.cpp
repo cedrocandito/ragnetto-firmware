@@ -2,7 +2,6 @@
 #include <Wire.h>
 #include <Adafruit_PWMServoDriver.h>
 #include "ragnetto_hardware.h"
-#include "ragnetto_config.h"
 #include "logging.h"
 
 // local functions (not public)
@@ -12,7 +11,6 @@ bool compare_eeprom_block(uint16_t position, uint8_t *buffer, uint16_t size);
 void setup_pwm_controllers();
 void setup_console();
 
-static Configuration configuration;
 
 /* PWM controllers. */
 Adafruit_PWMServoDriver pwm[NUM_PWM_CONTROLLERS];
@@ -28,28 +26,8 @@ uint16_t angle_to_pwm_controller_units(float angle)
 /* Initialize all the hardware */
 void setup_hardware()
 {
-    setup_console();
     setup_pwm_controllers();
     LOGSLN("Hardware setup complete.");
-}
-
-/* Initialize console serial port. */
-void setup_console()
-{
-    Serial.begin(TERMINAL_BAUD);
-    #ifdef LOGGING_ENABLED
-    unsigned long t1 = micros();
-    #endif
-    while(!Serial)
-    {
-        delay(2);
-    }
-    #ifdef LOGGING_ENABLED
-    unsigned long t2 = micros();
-    LOGS("Had to wait ");
-    LOGN(t2-t1);
-    LOGSLN(" microseconds for the console serial port to become active.");
-    #endif
 }
 
 /* Initialize PWM controllers. */
@@ -65,13 +43,13 @@ void setup_pwm_controllers()
     }
 }
 
-/* Set the position (angle) of one servo, using servo_id. Trim values are applied. */
-void set_servo_position(uint8_t servo_id, float angle)
+/* Set the position (angle) of one servo, using servo_id. Trim values are applied
+to the final calculated 0-4096 value. */
+void set_servo_position(uint8_t servo_id, float angle, uint8_t trim)
 {
     uint8_t controller_id = servo_id / CHANNELS_PER_PWM_CONTROLLER;
     uint8_t channel = servo_id % CHANNELS_PER_PWM_CONTROLLER;
 
-    //??????????????????
     /*
     LOGLN();
     LOGS("Channel ");
@@ -87,5 +65,5 @@ void set_servo_position(uint8_t servo_id, float angle)
     LOGSLN(" units");
     */
 
-    pwm[controller_id].setPWM(channel, 0, angle_to_pwm_controller_units(angle));
+    pwm[controller_id].setPWM(channel, 0, angle_to_pwm_controller_units(angle) + trim);
 }

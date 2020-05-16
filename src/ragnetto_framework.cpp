@@ -1,9 +1,10 @@
 #include <Arduino.h>
+#include <inttypes.h>
 #include "ragnetto_framework.h"
 #include "ragnetto_hardware.h"
 #include "ragnetto_config.h"
 #include "logging.h"
-
+#include "serial.h"
 
 /*
  * Array of legs; each legs contains 3 servo ids (from upper to lower leg).
@@ -11,15 +12,14 @@
  * Legs are numbered zero-based from front left, counterclockwise
  * (so front right is #5).
  */
-static const uint8_t legs[NUM_LEGS][SERVOS_PER_LEG] =
-{
-    {16, 17, 18},
-    {19, 20, 21},
-    {22, 23, 24},
-    {0, 1, 2},
-    {3, 4, 5},
-    {6, 7, 8}
-};
+static const uint8_t servos_by_leg[NUM_LEGS][SERVOS_PER_LEG] =
+    {
+        {16, 17, 18},
+        {19, 20, 21},
+        {22, 23, 24},
+        {0, 1, 2},
+        {3, 4, 5},
+        {6, 7, 8}};
 
 /* Normalize an angle to the range 0 - 2*PI; optimized for angles just out of the range */
 float normalize_0_to_2pi(float a)
@@ -50,8 +50,6 @@ float normalize_minus_pi_plus_pi(float a)
     }
     return a;
 }
-
-
 
 Point3d::Point3d()
 {
@@ -98,8 +96,7 @@ Point2d::Point2d(const Point2d &p)
     y = p.y;
 }
 
-
-// setup leg position and angle
+// setup leg position and angle for the leg
 void Leg::setup(const uint8_t id, bool invert)
 {
     leg_id = id;
@@ -122,7 +119,7 @@ void Leg::moveTo(const Point3d &point)
     LOGS(", ");
     LOGN(point.z);
     LOGS("mm]: ");
- 
+
     float angles[3];
     bool ok = pointIn3dSpaceToJointAngles(point, *this, angles);
     if (ok)
@@ -134,11 +131,11 @@ void Leg::moveTo(const Point3d &point)
         LOGS(", ");
         LOGN(angles[2]);
         LOGS(" rad)");
-    
+
         currentPosition = Point3d(point);
-        set_servo_position(legs[leg_id][0],angles[0]);
-        set_servo_position(legs[leg_id][1],angles[1]+(invertServo ? JOINT2_OFFSET:-JOINT2_OFFSET));
-        set_servo_position(legs[leg_id][2],angles[2]+(invertServo ? JOINT3_OFFSET:-JOINT3_OFFSET));
+        set_servo_position(servos_by_leg[leg_id][0], angles[0], configuration.servo_trim[leg_id][0]);
+        set_servo_position(servos_by_leg[leg_id][1], angles[1] + (invertServo ? JOINT2_OFFSET : -JOINT2_OFFSET), configuration.servo_trim[leg_id][1]);
+        set_servo_position(servos_by_leg[leg_id][2], angles[2] + (invertServo ? JOINT3_OFFSET : -JOINT3_OFFSET), configuration.servo_trim[leg_id][2]);
     }
     else
     {
@@ -152,7 +149,106 @@ Ragnetto::Ragnetto()
 {
     for (uint8_t i = 0; i < NUM_LEGS; i++)
     {
-        legs[i].setup(i, i>=3);
+        legs[i].setup(i, i >= 3);
+    }
+    mode = MODE_CALIBRATION;
+}
+
+void Ragnetto::process_input()
+{
+    char *command = serial_receive_command();
+    if (command != nullptr)
+    {
+        // ignore empty commands
+        if (strlen(command) < 1)
+            return;
+
+        serial_print(*command);
+        switch (*command)
+        {
+        case COMMAND_JOYSTICK:
+            if (sscanf(command, "J%" SCNi8 ";%" SCNi8 ";%" SCNi8, &joystick.y, &joystick.x, &joystick.r) == 3)
+                serial_println(OUTPUT_OK);
+            else
+                serial_println(OUTPUT_ERROR);
+            break;
+
+        case COMMAND_SET_HEIGHT:
+            if (sscanf(command, "H%" SCNi8, &configuration.height_offset) == 1)
+                serial_println(OUTPUT_OK);
+            else
+                serial_println(OUTPUT_ERROR);
+            break;
+
+        case COMMAND_SET_TRIM:
+            uint8_t servo_num;
+            int8_t trim;
+            if (sscanf(command, "T%" SCNu8 ";%" SCNi8, &servo_num, &trim) == 2)
+            {
+                configuration.servo_trim[servo_num / NUM_LEGS][servo_num % NUM_LEGS] = trim;
+                serial_println(OUTPUT_OK);
+            }
+            else
+                serial_println(OUTPUT_ERROR);
+            break;
+
+        case COMMAND_READ_CONFIGURATION:
+            configuration.read();
+            break;
+
+        case COMMAND_WRITE_CONFIGURATION:
+            configuration.write();
+            break;
+
+        case COMMAND_SHOW_CONFIGURATION:
+            for (uint8_t leg = 0; leg < NUM_LEGS; leg++)
+            {
+                for (uint8_t joint = 0; joint < SERVOS_PER_LEG; joint++)
+                {
+                    serial_print(configuration.servo_trim[leg][joint]);
+                    serial_print(';');
+                }
+            }
+            serial_print(configuration.height_offset);
+            serial_println();
+            break;
+
+        case COMMAND_SET_MODE:
+            if (sscanf(command, "M%" SCNi8, &mode) == 1)
+                serial_println(OUTPUT_OK);
+            else
+                serial_println(OUTPUT_ERROR);
+            break;
+
+        default:
+            serial_println(F("Unknown command"));
+            break;
+        }
+    }
+}
+
+void Ragnetto::run()
+{
+    process_input();
+    switch(mode)
+    {
+        case MODE_CALIBRATION:
+            for (uint8_t leg=0; leg<NUM_LEGS; leg++)
+            {
+                for(uint8_t joint=0; joint<SERVOS_PER_LEG; joint++)
+                {
+                    set_servo_position(servos_by_leg[leg][joint],0,configuration.servo_trim[leg][joint]);
+                }
+            }
+            break;
+        
+        case MODE_JOYSTICK:
+            //????????????
+            break;
+
+        case MODE_STANCE:
+            //??????????
+            break;
     }
 }
 
@@ -165,8 +261,8 @@ void LinearLegMove::interpolatePosition(float progress, Point3d &destination)
 
 void CoordinatedMove::interpolatePositions(unsigned long millis, Point3d destinationPoints[NUM_LEGS])
 {
-    float progress = (float)(millis - startMillis)/(float)(endMillis - startMillis);
-    for (int i=0; i<NUM_LEGS; i++)
+    float progress = (float)(millis - startMillis) / (float)(endMillis - startMillis);
+    for (int i = 0; i < NUM_LEGS; i++)
     {
         legMovements[i].interpolatePosition(progress, destinationPoints[i]);
     }
@@ -217,20 +313,18 @@ bool pointIn3dSpaceToJointAngles(const Point3d &p, const Leg &leg, float result_
     joint 2 attachment position (0, 0) and y corresponds to real-world p.z */
 
     float l = sqrt(p.x * p.x + p.y * p.y);
-    // correction for target points beyond the leg attachment point (toward the body) 
-    if ((signbit(sina) != signbit(p.y)) && (signbit(cosa)!=signbit(p.x)))
-        l=-l;
+    // correction for target points beyond the leg attachment point (toward the body)
+    if ((signbit(sina) != signbit(p.y)) && (signbit(cosa) != signbit(p.x)))
+        l = -l;
     Point2d pp(l - LEG_SEGMENT_1_LENGTH, p.z);
 
     /* inverse kinematics for joint 2 and 3 */
-    const float cosb = (pp.x * pp.x + pp.y * pp.y
-        - LEG_SEGMENT_2_LENGTH * LEG_SEGMENT_2_LENGTH
-        - LEG_SEGMENT_3_LENGTH * LEG_SEGMENT_3_LENGTH) / (2 * LEG_SEGMENT_2_LENGTH * LEG_SEGMENT_3_LENGTH);
+    const float cosb = (pp.x * pp.x + pp.y * pp.y - LEG_SEGMENT_2_LENGTH * LEG_SEGMENT_2_LENGTH - LEG_SEGMENT_3_LENGTH * LEG_SEGMENT_3_LENGTH) / (2 * LEG_SEGMENT_2_LENGTH * LEG_SEGMENT_3_LENGTH);
 
     /* check if the point is out of reach (no solution) */
     if (abs(cosb) > 1.0)
         return false;
-    
+
     // 2 solutions for square root
     const float sinb1 = sqrt(1 - cosb * cosb);
     const float sinb2 = -sinb1;

@@ -6,6 +6,25 @@
 #include "logging.h"
 #include "ragnetto.h"
 
+// working modes
+#define MODE_STANCE 00
+#define MODE_CALIBRATION 01
+#define MODE_JOYSTICK 02
+
+// serial commands
+#define COMMAND_JOYSTICK 'J'
+#define COMMAND_SET_TRIM 'T'
+#define COMMAND_SET_HEIGHT 'H'
+#define COMMAND_READ_CONFIGURATION 'R'
+#define COMMAND_WRITE_CONFIGURATION 'W'
+#define COMMAND_SHOW_CONFIGURATION 'C'
+#define COMMAND_SET_MODE 'M'
+
+#define OUTPUT_OK F("OK")
+#define OUTPUT_ERROR F("ERROR")
+
+
+// a point in 2d space
 class Point3d
 {
     public:
@@ -18,6 +37,7 @@ class Point3d
     Point3d(const Point3d &p);
 };
 
+// a point in 3d space
 class Point2d
 {
     public:
@@ -30,6 +50,7 @@ class Point2d
     Point2d(const Point2d &p);
 };
 
+// single leg
 class Leg
 {
     public:
@@ -46,6 +67,7 @@ class Leg
     void moveTo(const Point3d &point);
 };
 
+// a single move for a leg (abstract)
 class LegMove
 {
     protected:
@@ -57,17 +79,23 @@ class LegMove
     virtual void interpolatePosition(float progress, Point3d &destination);
 };
 
+// linear movement between two points
 class LinearLegMove : public LegMove
 {
      void interpolatePosition(float progress, Point3d &destination);
 };
 
+// move from start to end point passing through an intermediate one
 class QuadraticUpwardLegMove : public LegMove
 {
-     void interpolatePosition(float progress, Point3d &destination);
+    protected:
+    Point3d intermediatePoint;
+
+    public:
+    void interpolatePosition(float progress, Point3d &destination);
 };
 
-/* Moves fot all the six legs. */
+/* moves fot all the six legs. */
 class CoordinatedMove
 {
     public:
@@ -79,22 +107,41 @@ class CoordinatedMove
     bool stillRunning(unsigned long millis);
 };
 
+/* virtual joystick for controlling the motion of the robot */
+class Joystick
+{
+    public:
+    /* left/right (positive = right) */
+    int8_t x;
+    /* forward/backward (positive is forward) */
+    int8_t y; 
+    /* rotation (positive is ccw) */
+    int8_t r;
+};
+
+/* top level class for the robot */
 class Ragnetto
 {
     public:
+    uint8_t mode;
     Leg legs[NUM_LEGS];
+    Joystick joystick;
 
     // constructor
     Ragnetto();
+
+    // Method to put in mail loop: read commands and move the robot
+    void run();
+
+    private:
+    // Read characters from serial and act upon them. */
+    void process_input();
 };
+
 
 /* Calculate the angles to be applied to the joints in order to move the leg to
 a point in space. Coordinates are relative to attachment point of the leg, angles are absolute.
 Returns true if there is a solution, false if not. */
 bool pointIn3dSpaceToJointAngles(const Point3d &p, const Leg &leg, float result_angles[]);
-
-//???????????? joint 2: gambe 0-2 clockwise giù, 3-5 clockwise su
-
-// ??????????? invertire offset per gambe 3-5!!!!
 
 #endif

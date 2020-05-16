@@ -26,13 +26,12 @@
 /* angle corresponding to one PWM controller unit */
 #define TRIM_ANGLE_UNIT (HALF_PI / MICROSEC_TO_PWM_CONTROLLER_UNITS(1) / PULSE_MICROS_OFFSET_90_DEG)
 
-#define TERMINAL_BAUD 9600
-
 
 /* Initialize all the hardware. */
 void setup_hardware();
 
-/* Set the position (angle) of one servo, using servo_id. Trim values are applied. */
-void set_servo_position(uint8_t servo_id, float angle);
+/* Set the position (angle) of one servo, using servo_id. Trim values are applied
+to the final calculated 0-4096 value. */
+void set_servo_position(uint8_t servo_id, float angle, uint8_t trim);
 
 #endif

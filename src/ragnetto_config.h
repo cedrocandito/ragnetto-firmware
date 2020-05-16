@@ -4,7 +4,6 @@
 #include <arduino.h>
 #include "logging.h"
 #include "ragnetto.h"
-#include "serial.h"
 
 #define CONFIG_ID_SIZE 9+1
 #define CONFIG_ID "RAGNETTO"
@@ -18,11 +17,14 @@ class Configuration
 
     public:
     int8_t servo_trim[NUM_LEGS][SERVOS_PER_LEG];
+    int8_t height_offset;
 
-    /* Reset in-memory configuration to default values. */
     Configuration();
+    /* Reset in-memory configuration to default values. */
     void restore_default();
+    /* Read EEPROM to memory. */
     void read();
+    /* Write memory configuration to EEPROM. */
     void write();
 
     private:
@@ -30,6 +32,6 @@ class Configuration
     bool compare_eeprom_block(uint16_t position, uint8_t *buffer, uint16_t size);
 };
 
-
+extern Configuration configuration;
 
 #endif
