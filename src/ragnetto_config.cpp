@@ -23,7 +23,7 @@ void Configuration::read()
     {
         // configuration is valid, read it
         LOGSLN("Configuration in EEPROM is valid");
-        read_eeprom_block(CONFIG_BASE_ADDR, (char*)this, sizeof(Configuration));
+        read_eeprom_block(CONFIG_BASE_ADDR, (uint8_t*)this, sizeof(Configuration));
     }
     else
     {
@@ -35,15 +35,32 @@ void Configuration::read()
 /* Write in-memory configuration to EEPROM. */
 void Configuration::write()
 {
-    LOGSLN("Configuration::write not yet implemented!!");
+    LOGSLN("Writing configuration to EEPROM");
+    write_eeprom_block(CONFIG_BASE_ADDR, (uint8_t*)this, sizeof(Configuration));
+    LOGSLN("Configuration written");
 }
 
 /* Read a block of bytes from EEPROM into a buffer. */
-void Configuration::read_eeprom_block(uint16_t position, char *buffer, uint16_t size)
+void Configuration::read_eeprom_block(uint16_t position, uint8_t *buffer, uint16_t size)
 {
-    for (uint16_t i = 0; i < size; i++)
+    for (uint16_t i = position; i < position + size; i++)
     {
-        *buffer++ = EEPROM.read(position + i);
+        *buffer++ = EEPROM.read(i);
+    }
+}
+
+/* Write a block of bytes to EEPROM from a buffer. */
+void Configuration::write_eeprom_block(uint16_t position, uint8_t *buffer, uint16_t size)
+{
+    uint8_t previous, to_be_written;
+    for (uint16_t i = position; i < position + size; i++)
+    {
+        previous = EEPROM.read(i);
+        to_be_written = *buffer++;
+        if (to_be_written != previous)
+        {
+            EEPROM.write(i, to_be_written);
+        }
     }
 }
 
@@ -51,9 +68,9 @@ void Configuration::read_eeprom_block(uint16_t position, char *buffer, uint16_t 
 return true if they are the same. */
 bool Configuration::compare_eeprom_block(uint16_t position, uint8_t *buffer, uint16_t size)
 {
-    for (uint16_t i = 0; i < size; i++)
+    for (uint16_t i = position; i < position + size; i++)
     {
-        if (*buffer++ != EEPROM.read(position + i))
+        if (*buffer++ != EEPROM.read(i))
             return false;
     }
     return true;

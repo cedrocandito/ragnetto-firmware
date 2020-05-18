@@ -45,7 +45,7 @@ void setup_pwm_controllers()
 
 /* Set the position (angle) of one servo, using servo_id. Trim values are applied
 to the final calculated 0-4096 value. */
-void set_servo_position(uint8_t servo_id, float angle, uint8_t trim)
+void set_servo_position(uint8_t servo_id, float angle, int8_t trim)
 {
     uint8_t controller_id = servo_id / CHANNELS_PER_PWM_CONTROLLER;
     uint8_t channel = servo_id % CHANNELS_PER_PWM_CONTROLLER;

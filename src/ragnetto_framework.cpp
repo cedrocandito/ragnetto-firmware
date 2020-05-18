@@ -181,15 +181,19 @@ void Ragnetto::process_input()
             break;
 
         case COMMAND_SET_TRIM:
-            uint8_t servo_num;
+            uint8_t leg_num;
+            uint8_t joint_num;
             int8_t trim;
-            if (sscanf(command, "T%" SCNu8 ";%" SCNi8, &servo_num, &trim) == 2)
+            if (sscanf(command, "T%" SCNu8 ";%" SCNi8 ";%" SCNi8, &leg_num, &joint_num, &trim) == 3
+                && leg_num>=0 && leg_num<NUM_LEGS && joint_num>=0 && joint_num<3)
             {
-                configuration.servo_trim[servo_num / NUM_LEGS][servo_num % NUM_LEGS] = trim;
+                configuration.servo_trim[leg_num][joint_num] = trim;
                 serial_println(OUTPUT_OK);
             }
             else
+            {
                 serial_println(OUTPUT_ERROR);
+            }
             break;
 
         case COMMAND_READ_CONFIGURATION:

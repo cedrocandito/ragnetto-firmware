@@ -9,11 +9,11 @@ Output is the first letter of the command followed by:
    custom data depending on the command
 
 
-Txx;vvv
-  set trim value for servo xx (zero based) to vvv.
+Txxx;yyy;vvv
+  set trim value for joint yyy (0-2) of leg xxx (0-5) to vvv.
 
-Hxxx
-  set body height offset to xxx millimeters.
+Hyyy
+  set body height offset to yyy millimeters.
 
 R
   Read configuration from EEPROM.

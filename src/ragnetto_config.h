@@ -28,7 +28,8 @@ class Configuration
     void write();
 
     private:
-    void read_eeprom_block(uint16_t position, char *buffer, uint16_t size);
+    void read_eeprom_block(uint16_t position, uint8_t *buffer, uint16_t size);
+    void write_eeprom_block(uint16_t position, uint8_t *buffer, uint16_t size);
     bool compare_eeprom_block(uint16_t position, uint8_t *buffer, uint16_t size);
 };
 
