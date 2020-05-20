@@ -101,8 +101,10 @@ void Leg::setup(const uint8_t id, bool invert)
 {
     leg_id = id;
     attachmentAngle = normalize_minus_pi_plus_pi(((leg_id + 2) % 6) * PI / 3.0);
-    attachmentPosition.x = cos(attachmentAngle) * LEG_ATTACHMENT_RADIUS;
-    attachmentPosition.y = sin(attachmentAngle) * LEG_ATTACHMENT_RADIUS;
+    attachmentAngleCos = cos(attachmentAngle);
+    attachmentAngleSin = sin(attachmentAngle);
+    attachmentPosition.x = attachmentAngleCos * LEG_ATTACHMENT_RADIUS;
+    attachmentPosition.y = attachmentAngleSin * LEG_ATTACHMENT_RADIUS;
     attachmentPosition.z = 0.0;
     invertServo = invert;
 }
@@ -241,7 +243,7 @@ void Ragnetto::run()
             {
                 for(uint8_t joint=0; joint<SERVOS_PER_LEG; joint++)
                 {
-                    set_servo_position(servos_by_leg[leg][joint],0,configuration.servo_trim[leg][joint]);
+                    set_servo_position(servos_by_leg[leg][joint], 0, configuration.servo_trim[leg][joint]);
                 }
             }
             break;
@@ -251,7 +253,15 @@ void Ragnetto::run()
             break;
 
         case MODE_STANCE:
-            //??????????
+            for (uint8_t legnum=0; legnum<NUM_LEGS; legnum++)
+            {
+                Leg leg = legs[legnum];
+                Point3d footPosition = Point3d();
+                footPosition.x = leg.attachmentAngleCos * BASE_FOOT_R;
+                footPosition.y = leg.attachmentAngleSin * BASE_FOOT_R;
+                footPosition.z = BASE_FOOT_Z + configuration.height_offset;
+                leg.moveTo(footPosition);
+            }
             break;
     }
 }

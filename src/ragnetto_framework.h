@@ -57,6 +57,8 @@ class Leg
     uint8_t leg_id;
     Point3d attachmentPosition;
     float attachmentAngle; // range is from -PI to +PI (the same atan2() uses)
+    float attachmentAngleCos;   // pre-calculated cos(attachmentAngle)
+    float attachmentAngleSin;   // pre-calculated sin(attachmentAngle)
     bool invertServo;      // true for legs that have joints 2 and 3 mounted in the opposite direction
     Point3d currentPosition;    // last moveTo() position
 
