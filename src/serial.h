@@ -31,6 +31,7 @@ if not defined they will be accepted from serial (usb) port
 
 #define serial_print(x) SER.print(x)
 #define serial_println(x) SER.println(x)
+#define serial_senderror(x) { SER.print(F("E")); SER.println(F(x)); }
 
 
 /*

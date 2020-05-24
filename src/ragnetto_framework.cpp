@@ -153,7 +153,7 @@ Ragnetto::Ragnetto()
     {
         legs[i].setup(i, i >= 3);
     }
-    mode = MODE_CALIBRATION;
+    mode = MODE_STANCE;
 }
 
 void Ragnetto::process_input()
@@ -249,40 +249,136 @@ void Ragnetto::run()
             break;
         
         case MODE_JOYSTICK:
-            //????????????
+            runJoystickMode();
             break;
 
         case MODE_STANCE:
             for (uint8_t legnum=0; legnum<NUM_LEGS; legnum++)
             {
-                Leg leg = legs[legnum];
+                Leg *leg = &legs[legnum];
                 Point3d footPosition = Point3d();
-                footPosition.x = leg.attachmentAngleCos * BASE_FOOT_R;
-                footPosition.y = leg.attachmentAngleSin * BASE_FOOT_R;
+                footPosition.x = leg->attachmentAngleCos * BASE_FOOT_R;
+                footPosition.y = leg->attachmentAngleSin * BASE_FOOT_R;
                 footPosition.z = BASE_FOOT_Z + configuration.height_offset;
-                leg.moveTo(footPosition);
+                leg->moveTo(footPosition);
             }
             break;
     }
 }
 
-void LinearLegMove::interpolatePosition(float progress, Point3d &destination)
+void Ragnetto::runJoystickMode()
 {
-    destination.x = (endPoint.x - startPoint.x) * progress + startPoint.x;
-    destination.y = (endPoint.y - startPoint.y) * progress + startPoint.y;
-    destination.z = (endPoint.z - startPoint.z) * progress + startPoint.z;
+    unsigned long now = millis();
+    if (coordinatedMovement.stillRunning(now))
+    {
+        // same phase
+        Point3d feetPositions[NUM_LEGS];
+        coordinatedMovement.interpolatePositions(now, feetPositions);
+        for (uint8_t legnum=0; legnum<NUM_LEGS; legnum++)
+        {
+            legs[legnum].moveTo(feetPositions[legnum]);
+        }
+    }
+    else
+    {
+        // new phase
+        walking_phase = 1 - walking_phase;
+
+        // down (pushing) legs
+        for (int legnum=walking_phase; legnum<NUM_LEGS; legnum+=2)
+        {
+            Leg *leg = &legs[legnum];
+            Point3d footPosition = Point3d();
+            footPosition.x = leg->attachmentAngleCos * BASE_FOOT_R - joystick.y;    //???? + altro & rot
+            footPosition.y = leg->attachmentAngleSin * BASE_FOOT_R - joystick.x;    //???? + altro & rot
+            footPosition.z = BASE_FOOT_Z + configuration.height_offset;
+
+            coordinatedMovement.legMovements[legnum].setLinearMovement(legs[legnum].currentPosition, footPosition);
+        }
+
+        // up legs
+        for (int legnum=1-walking_phase; legnum<NUM_LEGS; legnum+=2)
+        {
+            Leg *leg = &legs[legnum];
+            Point3d footPosition = Point3d();
+            footPosition.x = leg->attachmentAngleCos * BASE_FOOT_R + joystick.y;    //???? + altro & rot
+            footPosition.y = leg->attachmentAngleSin * BASE_FOOT_R + joystick.x;    //???? + altro & rot
+            footPosition.z = BASE_FOOT_Z + configuration.height_offset;
+            
+            //????????????? altezza da configurazione!!!
+            coordinatedMovement.legMovements[legnum].setQuadraticMovement(legs[legnum].currentPosition, footPosition, BASE_FOOT_Z + configuration.height_offset + 50);
+        }
+
+        // ????????????? da velocità???????????????
+        coordinatedMovement.start(now, 700);
+    }
 }
 
-void CoordinatedMove::interpolatePositions(unsigned long millis, Point3d destinationPoints[NUM_LEGS])
+
+
+void LegMovement::interpolatePosition(float progress, Point3d &destination)
 {
-    float progress = (float)(millis - startMillis) / (float)(endMillis - startMillis);
+    switch(type)
+    {
+        case MOVEMENT_TYPE_LINEAR:
+            destination.x = (endPoint.x - startPoint.x) * progress + startPoint.x;
+            destination.y = (endPoint.y - startPoint.y) * progress + startPoint.y;
+            destination.z = (endPoint.z - startPoint.z) * progress + startPoint.z;
+            break;
+        
+        case MOVEMENT_TYPE_QUADRATIC:
+            destination.x = (endPoint.x - startPoint.x) * progress + startPoint.x;
+            destination.y = (endPoint.y - startPoint.y) * progress + startPoint.y;
+            destination.z = a * progress * progress + b * progress + c;
+            break;
+        
+        default:
+            serial_senderror("Invalid movement type");
+    }
+}
+
+void LegMovement::setLinearMovement(Point3d &new_startpoint, Point3d &new_endpoint)
+{
+    type = MOVEMENT_TYPE_LINEAR;
+    startPoint = new_startpoint;
+    endPoint = new_endpoint;
+}
+
+void LegMovement::setQuadraticMovement(Point3d &new_startpoint, Point3d &new_endpoint, float new_intermediate_z)
+{
+    type = MOVEMENT_TYPE_QUADRATIC;
+    startPoint = new_startpoint;
+    endPoint = new_endpoint;
+    intermediate_z = new_intermediate_z;
+
+    // coefficients for the quadratic curve passing through starting z, intermediate z and end z.
+    // (painfully calculated on paper :-) )
+    a = 2*startPoint.z + 2*endPoint.z - 4*intermediate_z;
+    b = -3*startPoint.z - endPoint.z + 4*intermediate_z;
+    c = startPoint.z;
+}
+
+void CoordinatedMovement::start(long durationMillis)
+{
+    start(millis());
+}
+
+void CoordinatedMovement::start(unsigned long newStartMillis, long durationMillis)
+{
+    startMillis = newStartMillis;
+    endMillis = startMillis + durationMillis;
+}
+
+void CoordinatedMovement::interpolatePositions(unsigned long millis, Point3d destinationPoints[NUM_LEGS])
+{
+    float progress = (endMillis == startMillis ? 1.0 : (float)(millis - startMillis) / (float)(endMillis - startMillis));
     for (int i = 0; i < NUM_LEGS; i++)
     {
         legMovements[i].interpolatePosition(progress, destinationPoints[i]);
     }
 }
 
-bool CoordinatedMove::stillRunning(unsigned long millis)
+bool CoordinatedMovement::stillRunning(unsigned long millis)
 {
     return millis < endMillis;
 }

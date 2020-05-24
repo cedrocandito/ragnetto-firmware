@@ -7,9 +7,13 @@
 #include "ragnetto.h"
 
 // working modes
-#define MODE_STANCE 00
-#define MODE_CALIBRATION 01
-#define MODE_JOYSTICK 02
+#define MODE_STANCE 0
+#define MODE_CALIBRATION 1
+#define MODE_JOYSTICK 2
+
+// movement types
+#define MOVEMENT_TYPE_LINEAR 0
+#define MOVEMENT_TYPE_QUADRATIC 1
 
 // serial commands
 #define COMMAND_JOYSTICK 'J'
@@ -70,41 +74,32 @@ class Leg
 };
 
 // a single move for a leg (abstract)
-class LegMove
+class LegMovement
 {
-    protected:
+    public:
+    uint8_t type;
     Point3d startPoint;
     Point3d endPoint;
+    float intermediate_z;
+    float a,c,b;    // pre-computed coefficients fo quadratic function
 
-    public:
-    /* Interpolate middle points during the move. "progress" is 0.0 at segment start and 1.0 at segment end. */
-    virtual void interpolatePosition(float progress, Point3d &destination);
-};
-
-// linear movement between two points
-class LinearLegMove : public LegMove
-{
-     void interpolatePosition(float progress, Point3d &destination);
-};
-
-// move from start to end point passing through an intermediate one
-class QuadraticUpwardLegMove : public LegMove
-{
-    protected:
-    Point3d intermediatePoint;
-
-    public:
+    void setLinearMovement(Point3d &new_startpoint, Point3d &new_endpoint);
+    void setQuadraticMovement(Point3d &new_startoint, Point3d &new_endpoint, float new_intermediate_z);
+    /* Interpolate middle points during the move storing che current point into destination.
+    "progress" is 0.0 at segment start and 1.0 at segment end. */
     void interpolatePosition(float progress, Point3d &destination);
 };
 
-/* moves fot all the six legs. */
-class CoordinatedMove
+/* movements fot all the six legs. */
+class CoordinatedMovement
 {
     public:
     unsigned long startMillis;
     unsigned long endMillis;
-    LegMove legMovements[NUM_LEGS];
+    LegMovement legMovements[NUM_LEGS];
 
+    void start(long durationMillis);
+    void start(unsigned long newStartMillis, long durationMillis);
     void interpolatePositions(unsigned long millis, Point3d destinationPoints[NUM_LEGS]);
     bool stillRunning(unsigned long millis);
 };
@@ -128,6 +123,10 @@ class Ragnetto
     uint8_t mode;
     Leg legs[NUM_LEGS];
     Joystick joystick;
+    CoordinatedMovement coordinatedMovement;
+    /* during phase 0 legs 0, 2, 4 are down and legs 1, 3, 5 are up; during
+    phase 1 the opposite is true */
+    uint8_t walking_phase = 0;
 
     // constructor
     Ragnetto();
@@ -136,8 +135,9 @@ class Ragnetto
     void run();
 
     private:
-    // Read characters from serial and act upon them. */
+    // Read characters from serial and act upon them */
     void process_input();
+    void runJoystickMode();
 };
 
 
