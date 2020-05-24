@@ -7,9 +7,9 @@
 #include "ragnetto.h"
 
 // working modes
+#define MODE_CALIBRATION -1
 #define MODE_STANCE 0
-#define MODE_CALIBRATION 1
-#define MODE_JOYSTICK 2
+#define MODE_JOYSTICK 1
 
 // movement types
 #define MOVEMENT_TYPE_LINEAR 0
@@ -120,7 +120,7 @@ class Joystick
 class Ragnetto
 {
     public:
-    uint8_t mode;
+    int8_t mode;
     Leg legs[NUM_LEGS];
     Joystick joystick;
     CoordinatedMovement coordinatedMovement;

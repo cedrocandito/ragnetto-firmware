@@ -34,6 +34,6 @@ Jyyy;xxx;rrr
 
 Mxxx
   Set working mode to xxx:
+  -1 = calibration,
   0 = stance,
-  1 = calibration,
-  2 = joystick
+  1 = joystick
