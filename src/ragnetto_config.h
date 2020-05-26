@@ -9,6 +9,12 @@
 #define CONFIG_ID "RAGNETTO"
 #define CONFIG_BASE_ADDR 0
 
+#define DEFAULT_TRIM 0
+#define DEFAULT_HEIGHT_OFFSET 0
+#define DETAULT_LEG_LIFT_HEIGHT 50
+#define DEFAULT_LEG_DROP_DECELERATION 0.1
+#define DEFAULT_MAX_PHASE_DURATION 500
+
 class Configuration
 {
     private:
@@ -18,6 +24,10 @@ class Configuration
     public:
     int8_t servo_trim[NUM_LEGS][SERVOS_PER_LEG];
     int8_t height_offset;
+    int8_t leg_lift_height;
+    float leg_drop_deceleration;
+    uint16_t max_phase_duration;
+    
 
     Configuration();
     /* Reset in-memory configuration to default values. */
