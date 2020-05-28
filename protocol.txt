@@ -1,7 +1,6 @@
 Serial protocol
 ===============
 
-All numbers are decimal, signed, one byte (-128...+127).
 Lines are terminated by LF (0x0a).
 Output is the first letter of the command followed by:
    OK (command was accepted)
@@ -12,8 +11,14 @@ Output is the first letter of the command followed by:
 Txxx;yyy;vvv
   set trim value for joint yyy (0-2) of leg xxx (0-5) to vvv.
 
-Hyyy
-  set body height offset to yyy millimeters.
+Hxxx
+  set body height offset to xxx millimeters.
+
+Pxxx
+  set phase duration to xxx milliseconds.
+
+Lxxx
+  set leg lift to xxx millimeters
 
 R
   Read configuration from EEPROM.
@@ -28,9 +33,9 @@ C
   18: height offset
 
 Jyyy;xxx;rrr
-  Set joystick; drive using forward/backward speed yyy (positive is
-  forward), left/right speed xxx (positive is right) and rotation
-  speed rrr (positive is counterclockwise).
+  Set joystick; drive using forward/backward speed yyy in (mm/sec, positive is
+  forward), left/right speed xxx (in mm/sec, positive is right) and rotation
+  speed rrr (in degrees/sec, positive is counterclockwise).
 
 Mxxx
   Set working mode to xxx:

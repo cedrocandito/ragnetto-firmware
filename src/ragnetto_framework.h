@@ -19,11 +19,14 @@
 #define COMMAND_JOYSTICK 'J'
 #define COMMAND_SET_TRIM 'T'
 #define COMMAND_SET_HEIGHT 'H'
+#define COMMAND_SET_LIFT_HEIGHT 'L'
+#define COMMAND_SET_MAX_PHASE_DURATION 'P'
 #define COMMAND_READ_CONFIGURATION 'R'
 #define COMMAND_WRITE_CONFIGURATION 'W'
 #define COMMAND_SHOW_CONFIGURATION 'C'
 #define COMMAND_SET_MODE 'M'
 
+// output content
 #define OUTPUT_OK F("OK")
 #define OUTPUT_ERROR F("ERROR")
 
@@ -60,9 +63,12 @@ class Leg
     public:
     uint8_t leg_id;
     Point3d attachmentPosition;
+    Point3d baseFootPosition;
     float attachmentAngle; // range is from -PI to +PI (the same atan2() uses)
     float attachmentAngleCos;   // pre-calculated cos(attachmentAngle)
     float attachmentAngleSin;   // pre-calculated sin(attachmentAngle)
+    float rotation_x_per_degree;    // pre-calculated x offset to rotate the robot 1 degree
+    float rotation_y_per_degree;    // pre-calculated y offset to rotate the robot 1 degree
     bool invertServo;      // true for legs that have joints 2 and 3 mounted in the opposite direction
     Point3d currentPosition;    // last moveTo() position
 
@@ -108,12 +114,14 @@ class CoordinatedMovement
 class Joystick
 {
     public:
-    /* left/right (positive = right) */
+    /* left/right speed in mm/sec (positive = right) */
     int8_t x;
-    /* forward/backward (positive is forward) */
+    /* forward/backward in mm/sec (positive is forward) */
     int8_t y; 
-    /* rotation (positive is ccw) */
+    /* rotation in degrees/sec (positive is ccw) */
     int8_t r;
+
+    boolean idle();
 };
 
 /* top level class for the robot */

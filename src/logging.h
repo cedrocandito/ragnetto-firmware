@@ -1,7 +1,7 @@
 #ifndef LOGGING_H
 #define LOGGING_H
 
-//#define LOGGING_ENABLED
+#define LOGGING_ENABLED
 
 #ifdef LOGGING_ENABLED
     // log string

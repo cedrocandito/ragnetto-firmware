@@ -35,8 +35,12 @@
 #define JOINT3_OFFSET -HALF_PI
 
 // z-position of the foot relative to the attachment point of the leg (mm)
-#define BASE_FOOT_Z -100
+#define BASE_FOOT_Z -LEG_SEGMENT_3_LENGTH
 // position of the foot along the horizontal plane, relative to the attachment point of the leg (mm)
-#define BASE_FOOT_R 85
+#define BASE_FOOT_R (LEG_SEGMENT_1_LENGTH + LEG_SEGMENT_2_LENGTH)
+
+// when all values of the joystick are below this threshold the robot
+// will be stopped (all legs down).
+#define JOYSTICK_NULL_ZONE 2
 
 #endif

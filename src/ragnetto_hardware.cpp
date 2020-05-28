@@ -5,9 +5,6 @@
 #include "logging.h"
 
 // local functions (not public)
-void read_eeprom_block(uint16_t position, char *buffer, uint16_t size);
-void read_configuration();
-bool compare_eeprom_block(uint16_t position, uint8_t *buffer, uint16_t size);
 void setup_pwm_controllers();
 void setup_console();
 

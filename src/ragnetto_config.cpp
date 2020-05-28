@@ -96,5 +96,5 @@ void Configuration::restore_default()
     height_offset = DEFAULT_HEIGHT_OFFSET;
     leg_lift_height = DETAULT_LEG_LIFT_HEIGHT;
     leg_drop_deceleration = DEFAULT_LEG_DROP_DECELERATION;
-    max_phase_duration = DEFAULT_MAX_PHASE_DURATION;
+    phase_duration = DEFAULT_PHASE_DURATION;
 }
