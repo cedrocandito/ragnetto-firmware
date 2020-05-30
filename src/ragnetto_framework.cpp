@@ -363,8 +363,8 @@ void Ragnetto::runJoystickMode()
                 Leg *leg = &legs[legnum];
 
                 Point3d footPosition = Point3d();
-                footPosition.x = leg->baseFootPosition.x - half_forward_mm_per_cycle - leg->rotation_x_per_degree * DEG_TO_RAD * joystick.r / 2.0;
-                footPosition.y = leg->baseFootPosition.y - half_right_mm_per_cycle - leg->rotation_y_per_degree * DEG_TO_RAD * joystick.r / 2.0;
+                footPosition.x = leg->baseFootPosition.x - half_right_mm_per_cycle - leg->rotation_x_per_degree * DEG_TO_RAD * joystick.r / 2.0;
+                footPosition.y = leg->baseFootPosition.y - half_forward_mm_per_cycle - leg->rotation_y_per_degree * DEG_TO_RAD * joystick.r / 2.0;
                 footPosition.z = leg->baseFootPosition.z - configuration.height_offset;
 
                 coordinatedMovement.legMovements[legnum].setLinearMovement(legs[legnum].currentPosition, footPosition);
@@ -375,8 +375,8 @@ void Ragnetto::runJoystickMode()
             {
                 Leg *leg = &legs[legnum];
                 Point3d footPosition = Point3d();
-                footPosition.x = leg->baseFootPosition.x + half_forward_mm_per_cycle + leg->rotation_x_per_degree * DEG_TO_RAD * joystick.r / 2.0;
-                footPosition.y = leg->baseFootPosition.y + half_right_mm_per_cycle + leg->rotation_y_per_degree * DEG_TO_RAD * joystick.r / 2.0;
+                footPosition.x = leg->baseFootPosition.x + half_right_mm_per_cycle + leg->rotation_x_per_degree * DEG_TO_RAD * joystick.r / 2.0;
+                footPosition.y = leg->baseFootPosition.y + half_forward_mm_per_cycle + leg->rotation_y_per_degree * DEG_TO_RAD * joystick.r / 2.0;
                 footPosition.z = leg->baseFootPosition.z - configuration.height_offset;
                 
                 coordinatedMovement.legMovements[legnum].setQuadraticMovement(legs[legnum].currentPosition,
