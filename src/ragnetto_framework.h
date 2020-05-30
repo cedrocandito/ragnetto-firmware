@@ -121,7 +121,7 @@ class Joystick
     /* rotation in degrees/sec (positive is ccw) */
     int8_t r;
 
-    boolean idle();
+    bool idle();
 };
 
 /* top level class for the robot */

@@ -174,7 +174,7 @@ void Leg::moveTo(const Point3d &point)
     
 }
 
-boolean Joystick::idle()
+bool Joystick::idle()
 {
     return abs(x)<JOYSTICK_NULL_ZONE && abs(y)<JOYSTICK_NULL_ZONE && abs(r)<JOYSTICK_NULL_ZONE;
 }
