@@ -124,7 +124,7 @@ void Leg::setup(const uint8_t id, bool invert)
 }
 
 // move servos to indicated position (relative to leg attachment point)
-void Leg::moveTo(const Point3d &point)
+bool Leg::moveTo(const Point3d &point)
 {
     /*
     LOGS("Leg ");
@@ -172,6 +172,7 @@ void Leg::moveTo(const Point3d &point)
         LOGSLN("out of reach");
     }
     
+    return ok;
 }
 
 bool Joystick::idle()
@@ -304,7 +305,7 @@ void Ragnetto::run()
             break;
         
         case MODE_JOYSTICK:
-            runJoystickMode();
+            runJoystickMode(millis());
             break;
 
         case MODE_STANCE:
@@ -320,21 +321,14 @@ void Ragnetto::run()
 
 
 
-void Ragnetto::runJoystickMode()
+bool Ragnetto::runJoystickMode(unsigned long now)
 {
-    unsigned long now = millis();
-    if (coordinatedMovement.stillRunning(now))
+    if (!coordinatedMovement.stillRunning(now))
     {
-        // same phase
-        Point3d feetPositions[NUM_LEGS];
-        coordinatedMovement.interpolatePositions(now, feetPositions);
-        for (uint8_t legnum=0; legnum<NUM_LEGS; legnum++)
-        {
-            legs[legnum].moveTo(feetPositions[legnum]);
-        }
-    }
-    else
-    {
+        LOGN(coordinatedMovement.samples);
+        LOGS("/");
+        LOGNLN(configuration.phase_duration);
+        
         // new phase
         walking_phase = 1 - walking_phase;
         LOGVLN("Phase",walking_phase);
@@ -386,6 +380,20 @@ void Ragnetto::runJoystickMode()
             coordinatedMovement.start(now, configuration.phase_duration);
         }
     }
+
+    // interpolate legs posizions and activate servos
+    Point3d feetPositions[NUM_LEGS];
+    coordinatedMovement.interpolatePositions(now, feetPositions);
+
+    bool ok = true;
+
+    for (uint8_t legnum=0; legnum<NUM_LEGS; legnum++)
+    {
+        if (!legs[legnum].moveTo(feetPositions[legnum]))
+            ok = false;
+    }
+
+    return ok;
 }
 
 
@@ -448,6 +456,7 @@ void CoordinatedMovement::start(unsigned long newStartMillis, long durationMilli
 {
     startMillis = newStartMillis;
     endMillis = startMillis + durationMillis;
+    samples = 0;
 }
 
 void CoordinatedMovement::interpolatePositions(unsigned long millis, Point3d destinationPoints[NUM_LEGS])
@@ -462,6 +471,8 @@ void CoordinatedMovement::interpolatePositions(unsigned long millis, Point3d des
     {
         legMovements[i].interpolatePosition(progress, destinationPoints[i]);
     }
+
+    samples++;
 }
 
 bool CoordinatedMovement::stillRunning(unsigned long millis)

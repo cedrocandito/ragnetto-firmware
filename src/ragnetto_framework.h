@@ -75,8 +75,9 @@ class Leg
     // setup leg position and angle
     void setup(const uint8_t id, bool invert);
     
-    // move servos to indicated position (relative to leg attachment point)
-    void moveTo(const Point3d &point);
+    // move servos to indicated position (relative to leg attachment point); returns true if
+    // the destination point is reachable.
+    bool moveTo(const Point3d &point);
 };
 
 // a single move for a leg (abstract)
@@ -103,6 +104,7 @@ class CoordinatedMovement
     unsigned long startMillis;
     unsigned long endMillis;
     LegMovement legMovements[NUM_LEGS];
+    uint16_t samples;
 
     void start(long durationMillis);
     void start(unsigned long newStartMillis, long durationMillis);
@@ -142,10 +144,13 @@ class Ragnetto
     // Method to put in mail loop: read commands and move the robot
     void run();
 
-    private:
-    // Read characters from serial and act upon them */
+    // the following methods should be private, but making them public is useful
+    // for reusing the code in a pc for simulation purposes
+
+    // Read characters from serial and act upon them
     void process_input();
-    void runJoystickMode();
+    // Delegated by run() when in joystick walk mode; returns false if one or more legs are moved out of range
+    bool runJoystickMode(unsigned long now);
 };
 
 
