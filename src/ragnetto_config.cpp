@@ -23,7 +23,7 @@ void Configuration::read()
     {
         // configuration is valid, read it
         LOGSLN("Configuration in EEPROM is valid");
-        // read stored confiug length
+        // read stored config length
         uint16_t size;
         read_eeprom_block(sizeof(version), (uint8_t*)&size, sizeof(config_size));
         // read configuration (it may be shorter than the one we have in memory)
