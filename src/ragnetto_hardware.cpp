@@ -6,7 +6,6 @@
 
 // local functions (not public)
 void setup_pwm_controllers();
-void setup_console();
 
 
 /* PWM controllers. */
