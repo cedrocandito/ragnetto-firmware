@@ -72,6 +72,15 @@ Point3d::Point3d(const Point3d &p)
     z = p.z;
 }
 
+bool Point3d::operator ==(const Point3d &o)
+{
+    return (abs(x-o.x) < 0.1) && (abs(y-o.y) < 0.1) && (abs(z-o.z) < 0.1);
+}
+bool Point3d::operator !=(const Point3d &o)
+{
+    return !(*this==o);
+}
+
 Point2d::Point2d(const float newx, const float newy)
 {
     x = newx;
@@ -195,6 +204,8 @@ Ragnetto::Ragnetto()
 void Ragnetto::process_input()
 {
     char *command = serial_receive_command();
+    char *params = command+1;
+
     if (command != nullptr)
     {
         // ignore empty commands
@@ -205,28 +216,28 @@ void Ragnetto::process_input()
         switch (*command)
         {
         case COMMAND_JOYSTICK:
-            if (sscanf(command, "J%" SCNi8 ";%" SCNi8 ";%" SCNi8, &joystick.y, &joystick.x, &joystick.r) == 3)
+            if (sscanf(params, "%" SCNi8 ";%" SCNi8 ";%" SCNi8, &joystick.y, &joystick.x, &joystick.r) == 3)
                 serial_println(OUTPUT_OK);
             else
                 serial_println(OUTPUT_ERROR);
             break;
 
         case COMMAND_SET_HEIGHT:
-            if (sscanf(command, "H%" SCNi8, &configuration.height_offset) == 1)
+            if (sscanf(params, "%" SCNi8, &configuration.height_offset) == 1)
                 serial_println(OUTPUT_OK);
             else
                 serial_println(OUTPUT_ERROR);
             break;
         
         case COMMAND_SET_MAX_PHASE_DURATION:
-            if (sscanf(command, "P%" SCNu16, &configuration.phase_duration) == 1)
+            if (sscanf(params, "%" SCNu16, &configuration.phase_duration) == 1)
                 serial_println(OUTPUT_OK);
             else
                 serial_println(OUTPUT_ERROR);
             break;
         
         case COMMAND_SET_LIFT_HEIGHT:
-            if (sscanf(command, "L%" SCNu8, &configuration.leg_lift_height) == 1)
+            if (sscanf(params, "%" SCNu8, &configuration.leg_lift_height) == 1)
                 serial_println(OUTPUT_OK);
             else
                 serial_println(OUTPUT_ERROR);
@@ -236,7 +247,7 @@ void Ragnetto::process_input()
             uint8_t leg_num;
             uint8_t joint_num;
             int8_t trim;
-            if (sscanf(command, "T%" SCNu8 ";%" SCNi8 ";%" SCNi8, &leg_num, &joint_num, &trim) == 3
+            if (sscanf(params, "%" SCNu8 ";%" SCNi8 ";%" SCNi8, &leg_num, &joint_num, &trim) == 3
                 && leg_num>=0 && leg_num<NUM_LEGS && joint_num>=0 && joint_num<3)
             {
                 configuration.servo_trim[leg_num][joint_num] = trim;
@@ -269,14 +280,23 @@ void Ragnetto::process_input()
             serial_print(';');
             serial_print(configuration.leg_lift_height);
             serial_print(';');
-            serial_print(configuration.leg_drop_deceleration);
-            serial_print(';');
             serial_print(configuration.phase_duration);
+            serial_print(';');
+            serial_print(configuration.leg_lift_duration_percent);
+            serial_print(';');
+            serial_print(configuration.leg_drop_duration_percent);
             serial_println();
             break;
 
         case COMMAND_SET_MODE:
-            if (sscanf(command, "M%" SCNi8, &mode) == 1)
+            if (sscanf(params, "%" SCNi8, &mode) == 1)
+                serial_println(OUTPUT_OK);
+            else
+                serial_println(OUTPUT_ERROR);
+            break;
+        
+        case COMMAND_SET_LIFT_DROP_TICK:
+            if (sscanf(params, "%" SCNu8 ";%" SCNu8, &configuration.leg_lift_duration_percent, &configuration.leg_drop_duration_percent) == 2)
                 serial_println(OUTPUT_OK);
             else
                 serial_println(OUTPUT_ERROR);
@@ -312,7 +332,7 @@ void Ragnetto::run()
             for (uint8_t legnum=0; legnum<NUM_LEGS; legnum++)
             {
                 Point3d footPosition = Point3d(legs[legnum].baseFootPosition);
-                footPosition.x -= configuration.height_offset;
+                footPosition.z -= configuration.height_offset;
                 legs[legnum].moveTo(footPosition);
             }
             break;
@@ -325,24 +345,44 @@ bool Ragnetto::runJoystickMode(unsigned long now)
 {
     if (!coordinatedMovement.stillRunning(now))
     {
+        /* ??????
         LOGN(coordinatedMovement.samples);
         LOGS("/");
         LOGNLN(configuration.phase_duration);
+        */
         
         // new phase
         walking_phase = 1 - walking_phase;
-        LOGVLN("Phase",walking_phase);
 
         if (joystick.idle())
         {
             // joystick in null zone: lower all the legs to stance position
+            // (unless they are alla already in stance position)
+            bool at_leat_one_leg_not_at_rest = false;
             for (int legnum=0; legnum<NUM_LEGS; legnum++)
             {
+                // target foot position
                 Point3d footPosition = Point3d(legs[legnum].baseFootPosition);
-                footPosition.x -= configuration.height_offset;
-                coordinatedMovement.legMovements[legnum].setLinearMovement(legs[legnum].currentPosition, footPosition);
+                footPosition.z -= configuration.height_offset;
+                if (footPosition != legs[legnum].currentPosition)
+                {
+                    at_leat_one_leg_not_at_rest = true;
+                    if ((legnum & 1) == walking_phase)
+                    {
+                        coordinatedMovement.legMovements[legnum].setLinearMovement(legs[legnum].currentPosition, footPosition);
+                    }
+                    else
+                    {
+                        coordinatedMovement.legMovements[legnum].setUpSlideDownMovement(legs[legnum].currentPosition,
+                            footPosition, footPosition.z + configuration.leg_lift_height,
+                            configuration.leg_lift_duration_percent / 100.0,
+                            1.0 - configuration.leg_drop_duration_percent / 100.0);
+                    }
+                }
             }
-            coordinatedMovement.start(now, configuration.phase_duration);
+            
+            if (at_leat_one_leg_not_at_rest)
+                coordinatedMovement.start(now, configuration.phase_duration);
         }
         else
         {
@@ -373,27 +413,36 @@ bool Ragnetto::runJoystickMode(unsigned long now)
                 footPosition.y = leg->baseFootPosition.y + half_forward_mm_per_cycle + leg->rotation_y_per_degree * DEG_TO_RAD * joystick.r / 2.0;
                 footPosition.z = leg->baseFootPosition.z - configuration.height_offset;
                 
-                coordinatedMovement.legMovements[legnum].setQuadraticMovement(legs[legnum].currentPosition,
-                        footPosition, leg->baseFootPosition.z - configuration.height_offset + configuration.leg_lift_height);
+                coordinatedMovement.legMovements[legnum].setUpSlideDownMovement(legs[legnum].currentPosition,
+                        footPosition, leg->baseFootPosition.z - configuration.height_offset + configuration.leg_lift_height,
+                        configuration.leg_lift_duration_percent / 100.0,
+                        1.0 - configuration.leg_drop_duration_percent / 100.0);
             }
 
             coordinatedMovement.start(now, configuration.phase_duration);
         }
     }
 
-    // interpolate legs posizions and activate servos
-    Point3d feetPositions[NUM_LEGS];
-    coordinatedMovement.interpolatePositions(now, feetPositions);
-
-    bool ok = true;
-
-    for (uint8_t legnum=0; legnum<NUM_LEGS; legnum++)
+    // interpolate legs positions and activate servos
+    if (coordinatedMovement.stillRunning(now))
     {
-        if (!legs[legnum].moveTo(feetPositions[legnum]))
-            ok = false;
-    }
+        Point3d feetPositions[NUM_LEGS];
+        coordinatedMovement.interpolatePositions(now, feetPositions);
 
-    return ok;
+        bool ok = true;
+
+        for (uint8_t legnum=0; legnum<NUM_LEGS; legnum++)
+        {
+            if (!legs[legnum].moveTo(feetPositions[legnum]))
+                ok = false;
+        }
+
+        return ok;
+    }
+    else
+    {
+        return true;
+    }
 }
 
 
@@ -408,18 +457,30 @@ void LegMovement::interpolatePosition(float progress, Point3d &destination)
             destination.z = (endPoint.z - startPoint.z) * progress + startPoint.z;
             break;
         
-        case MOVEMENT_TYPE_QUADRATIC:
-            {   // (explicit block to silence a warning)
-                destination.x = (endPoint.x - startPoint.x) * progress + startPoint.x;
-                destination.y = (endPoint.y - startPoint.y) * progress + startPoint.y;
-                /* ????????????????
-                float decelerated_progress = configuration.leg_drop_deceleration * progress * progress * progress
-                    - (2*configuration.leg_drop_deceleration + 1) * progress * progress + (configuration.leg_drop_deceleration + 2) * progress;
-                destination.z = a * decelerated_progress * decelerated_progress + b * decelerated_progress + c;
-                */
-                destination.z = a * progress * progress + b * progress + c;
-                break;
+        case MOVEMENT_TYPE_UP_SLIDE_DOWN:
+        {
+            destination.x = (endPoint.x - startPoint.x) * progress + startPoint.x;
+            destination.y = (endPoint.y - startPoint.y) * progress + startPoint.y;
+
+            if (progress < linear_lift_tick)
+            {
+                // 0 to threshold_in: linear from start z to intermediate z
+                destination.z = progress * (intermediate_z - startPoint.z) / linear_lift_tick + startPoint.z;
             }
+            else if (progress <= linear_drop_tick)
+            {
+                // threshold_in to threshold_out: stay at intermediate z
+                destination.z = intermediate_z;
+            }
+            else
+            {
+                // threshold_out to 1.0: linear from intermediate z to end z
+                float m = (intermediate_z - endPoint.z) / (linear_drop_tick - 1.0);
+                destination.z = progress * m + endPoint.z - m;
+            }
+
+            break;
+        }
         
         default:
             serial_senderror("Invalid movement type");
@@ -433,18 +494,14 @@ void LegMovement::setLinearMovement(Point3d &new_startpoint, Point3d &new_endpoi
     endPoint = new_endpoint;
 }
 
-void LegMovement::setQuadraticMovement(Point3d &new_startpoint, Point3d &new_endpoint, float new_intermediate_z)
+void LegMovement::setUpSlideDownMovement(Point3d &new_startpoint, Point3d &new_endpoint, float new_intermediate_z, float new_linear_lift_tick, float new_linear_drop_tick)
 {
-    type = MOVEMENT_TYPE_QUADRATIC;
+    type = MOVEMENT_TYPE_UP_SLIDE_DOWN;
     startPoint = new_startpoint;
     endPoint = new_endpoint;
     intermediate_z = new_intermediate_z;
-
-    // coefficients for the quadratic curve passing through starting z, intermediate z and end z.
-    // (painfully calculated on paper :-) )
-    a = 2*startPoint.z + 2*endPoint.z - 4*intermediate_z;
-    b = -3*startPoint.z - endPoint.z + 4*intermediate_z;
-    c = startPoint.z;
+    linear_lift_tick = new_linear_lift_tick;
+    linear_drop_tick = new_linear_drop_tick;
 }
 
 void CoordinatedMovement::start(long durationMillis)
@@ -457,15 +514,23 @@ void CoordinatedMovement::start(unsigned long newStartMillis, long durationMilli
     startMillis = newStartMillis;
     endMillis = startMillis + durationMillis;
     samples = 0;
+    running = true;
 }
 
 void CoordinatedMovement::interpolatePositions(unsigned long millis, Point3d destinationPoints[NUM_LEGS])
 {
     float progress;
-    if ((endMillis == startMillis) || (millis >= endMillis))
+    if ((millis >= endMillis) || (endMillis == startMillis))
+    {
+        // movement terminated
         progress = 1.0;
+        running = false;
+    }
     else
+    {
+        // movement still running
         progress = (float)(millis - startMillis) / (float)(endMillis - startMillis);
+    }
 
     for (int i = 0; i < NUM_LEGS; i++)
     {
@@ -477,7 +542,7 @@ void CoordinatedMovement::interpolatePositions(unsigned long millis, Point3d des
 
 bool CoordinatedMovement::stillRunning(unsigned long millis)
 {
-    return millis < endMillis;
+    return running;
 }
 
 /* Calculate the angles to be applied to the joints in order to move the leg to
@@ -506,7 +571,6 @@ bool pointIn3dSpaceToJointAngles(const Point3d &p, const Leg &leg, float result_
     /* check if the servo rotation is within limits */
     if ((joint1_angle < JOINT1_MIN_ANGLE) || (joint1_angle > JOINT1_MAX_ANGLE))
     {
-        LOGVLN("?j1",joint1_angle);
         return false;
     }
 
@@ -534,7 +598,6 @@ bool pointIn3dSpaceToJointAngles(const Point3d &p, const Leg &leg, float result_
     /* check if the point is out of reach (no solution) */
     if (abs(cosb) > 1.0)
     {
-        LOGVLN("?cos b",cosb);
         return false;
     }
 
@@ -545,7 +608,6 @@ bool pointIn3dSpaceToJointAngles(const Point3d &p, const Leg &leg, float result_
     // note: the check on sinb1 covers sinb2 too
     if (abs(sinb1) > 1.0)
     {
-        LOGVLN("?sin b1",sinb1);
         return false;
     }
 
@@ -562,7 +624,6 @@ bool pointIn3dSpaceToJointAngles(const Point3d &p, const Leg &leg, float result_
     }
     else
     {
-        float c1 = c, b1=b; //?????????????
         c = atan2(sinb1, cosb);
         b = v_ang - atan2(LEG_SEGMENT_3_LENGTH * sinb1, LEG_SEGMENT_2_LENGTH + LEG_SEGMENT_3_LENGTH * cosb);
         if ((c >= JOINT3_MIN_ANGLE) && (c <= JOINT3_MAX_ANGLE) && (b >= JOINT2_MIN_ANGLE) && (b <= JOINT2_MAX_ANGLE))
@@ -574,14 +635,6 @@ bool pointIn3dSpaceToJointAngles(const Point3d &p, const Leg &leg, float result_
         else
         {
             // no solution is good
-            LOGVLN("?b1",b1);
-            LOGVLN("?b2",b);
-            LOGVLN("?b min",JOINT2_MIN_ANGLE);
-            LOGVLN("?b max",JOINT2_MAX_ANGLE);
-            LOGVLN("?c1",c1);
-            LOGVLN("?c2",c);
-            LOGVLN("?c min",JOINT3_MIN_ANGLE);
-            LOGVLN("?c max",JOINT3_MAX_ANGLE);
             return false;
         }
     }

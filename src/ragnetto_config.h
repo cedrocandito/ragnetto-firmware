@@ -11,9 +11,10 @@
 
 #define DEFAULT_TRIM 0
 #define DEFAULT_HEIGHT_OFFSET 0
-#define DETAULT_LEG_LIFT_HEIGHT 50
-#define DEFAULT_LEG_DROP_DECELERATION 0.1
+#define DETAULT_LEG_LIFT_HEIGHT 22
 #define DEFAULT_PHASE_DURATION 500
+#define DEFAULT_LEG_LIFT_DURATION_PERCENT 20
+#define DEFAULT_LEG_DROP_DURATION_PERCENT 20
 
 class Configuration
 {
@@ -25,10 +26,10 @@ class Configuration
     int8_t servo_trim[NUM_LEGS][SERVOS_PER_LEG];
     int8_t height_offset;
     uint8_t leg_lift_height;
-    float leg_drop_deceleration;
     uint16_t phase_duration;
+    uint8_t leg_lift_duration_percent;
+    uint8_t leg_drop_duration_percent;
     
-
     Configuration();
     /* Reset in-memory configuration to default values. */
     void restore_default();

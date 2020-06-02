@@ -13,7 +13,7 @@
 
 // movement types
 #define MOVEMENT_TYPE_LINEAR 0
-#define MOVEMENT_TYPE_QUADRATIC 1
+#define MOVEMENT_TYPE_UP_SLIDE_DOWN 1
 
 // serial commands
 #define COMMAND_JOYSTICK 'J'
@@ -25,6 +25,7 @@
 #define COMMAND_WRITE_CONFIGURATION 'W'
 #define COMMAND_SHOW_CONFIGURATION 'C'
 #define COMMAND_SET_MODE 'M'
+#define COMMAND_SET_LIFT_DROP_TICK 'Q'
 
 // output content
 #define OUTPUT_OK F("OK")
@@ -42,6 +43,9 @@ class Point3d
     Point3d();
     Point3d(const float newx, const float newy, const float newz);
     Point3d(const Point3d &p);
+
+    bool operator ==(const Point3d &o);
+    bool operator !=(const Point3d &o);
 };
 
 // a point in 3d space
@@ -88,10 +92,12 @@ class LegMovement
     Point3d startPoint;
     Point3d endPoint;
     float intermediate_z;
-    float a,c,b;    // pre-computed coefficients fo quadratic function
+    float linear_lift_tick;
+    float linear_drop_tick;
 
     void setLinearMovement(Point3d &new_startpoint, Point3d &new_endpoint);
-    void setQuadraticMovement(Point3d &new_startoint, Point3d &new_endpoint, float new_intermediate_z);
+    void setQuadraticMovement(Point3d &new_startpoint, Point3d &new_endpoint, float new_intermediate_z);
+    void setUpSlideDownMovement(Point3d &new_startpoint, Point3d &new_endpoint, float new_intermediate_z, float new_linear_lift_tick, float new_linear_drop_tick);
     /* Interpolate middle points during the move storing che current point into destination.
     "progress" is 0.0 at segment start and 1.0 at segment end. */
     void interpolatePosition(float progress, Point3d &destination);
@@ -104,6 +110,7 @@ class CoordinatedMovement
     unsigned long startMillis;
     unsigned long endMillis;
     LegMovement legMovements[NUM_LEGS];
+    bool running;
     uint16_t samples;
 
     void start(long durationMillis);
