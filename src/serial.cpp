@@ -2,15 +2,110 @@
 #include "serial.h"
 #include "logging.h"
 
-char command_buffer[COMMAND_BUFFER_SIZE];
-uint8_t buffer_index = 0;
 
 #ifdef USE_SOFTWARE_SERIAL
 SoftwareSerial ss(SOFTWARESERIAL_RX_PIN, SOFTWARESERIAL_TX_PIN);
 #endif
 
+
+/* Start serial communication on serial port (always) and on software
+serial (if defined). */
+void RagnettoSerial::begin()
+{
+    setup_console();
+    #ifdef USE_SOFTWARE_SERIAL
+    ss.begin(HARDWARE_SERIAL_BAUDRATE);
+    #endif
+}
+
+void RagnettoSerial::end()
+{
+    Serial.end();
+    #ifdef USE_SOFTWARE_SERIAL
+    ss.end();
+    #endif
+}
+
+int RagnettoSerial::read()
+{
+    #ifdef USE_SOFTWARE_SERIAL
+    return ss.read();
+    #else
+    return Serial.read();
+    #endif
+}
+
+int RagnettoSerial::availableForWrite()
+{
+    #ifdef USE_SOFTWARE_SERIAL
+    return ss.availableForWrite();
+    #else
+    return Serial.availableForWrite();
+    #endif
+}
+
+int RagnettoSerial::available()
+{
+    #ifdef USE_SOFTWARE_SERIAL
+    return ss.available();
+    #else
+    return Serial.available();
+    #endif
+}
+
+void RagnettoSerial::flush()
+{
+    #ifdef USE_SOFTWARE_SERIAL
+    ss.flush();
+    #else
+    Serial.flush();
+    #endif
+}
+
+size_t RagnettoSerial::write(uint8_t x)
+{
+    #ifdef USE_SOFTWARE_SERIAL
+    return ss.write(x);
+    #else
+    return Serial.write(x);
+    #endif  
+}
+
+size_t RagnettoSerial::write(const uint8_t* pointer, size_t size)
+{
+    #ifdef USE_SOFTWARE_SERIAL
+    return ss.write(pointer, size);
+    #else
+    return Serial.write(pointer, size);
+    #endif
+}
+
+RagnettoSerial::operator bool()
+{
+    #ifdef USE_SOFTWARE_SERIAL
+    return ss;
+    #else
+    return Serial;
+    #endif
+}
+
+int RagnettoSerial::peek()
+{
+    #ifdef USE_SOFTWARE_SERIAL
+    return ss.peek();
+    #else
+    return Serial.peek();
+    #endif
+}
+
+void RagnettoSerial::send_error(const String &description)
+{
+    print('E');
+    println(description);
+}
+
 /* Initialize console serial port. */
-void setup_console()
+void RagnettoSerial::setup_console()
 {
     Serial.begin(HARDWARE_SERIAL_BAUDRATE);
     #ifdef LOGGING_ENABLED
@@ -28,31 +123,13 @@ void setup_console()
     #endif
 }
 
-/* Start serial communication on serial port (always) and on software
-serial (if defined). */
-void serial_begin()
+char * RagnettoSerial::receive_command()
 {
-    setup_console();
-    #ifdef USE_SOFTWARE_SERIAL
-    ss.begin(HARDWARE_SERIAL_BAUDRATE);
-    #endif
-}
-
-/*
-Receive available characters from the serial line and puts them in a buffer.
-When a LF cratacter is received the buffer is returned (excluding the LF).
-This function will not block. If there are not enough characters immediately
-available to complete che line it returns nullptr.
-If the buffer becomes full the remain characters (until the LF) are discarded.
-CR characters are skipped.
-*/
-char *serial_receive_command()
-{
-    if (SER)
+    if (*this)
     {
-        while (SER.available() > 0)
+        while (available() > 0)
         {
-            char c = SER.read();
+            char c = read();
 
             // completely skip CR characters
             if (c == '\r')
@@ -78,3 +155,5 @@ char *serial_receive_command()
 
     return nullptr;
 }
+
+RagnettoSerial ragnetto_serial;

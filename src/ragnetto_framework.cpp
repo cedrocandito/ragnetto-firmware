@@ -203,7 +203,7 @@ Ragnetto::Ragnetto()
 
 void Ragnetto::process_input()
 {
-    char *command = serial_receive_command();
+    char *command = ragnetto_serial.receive_command();
     char *params = command+1;
 
     if (command != nullptr)
@@ -212,35 +212,35 @@ void Ragnetto::process_input()
         if (strlen(command) < 1)
             return;
 
-        serial_print(*command);
+        ragnetto_serial.print(*command);
         switch (*command)
         {
         case COMMAND_JOYSTICK:
             if (sscanf(params, "%" SCNi8 ";%" SCNi8 ";%" SCNi8, &joystick.y, &joystick.x, &joystick.r) == 3)
-                serial_println(OUTPUT_OK);
+                ragnetto_serial.println(OUTPUT_OK);
             else
-                serial_println(OUTPUT_ERROR);
+                ragnetto_serial.println(OUTPUT_ERROR);
             break;
 
         case COMMAND_SET_HEIGHT:
             if (sscanf(params, "%" SCNi8, &configuration.height_offset) == 1)
-                serial_println(OUTPUT_OK);
+                ragnetto_serial.println(OUTPUT_OK);
             else
-                serial_println(OUTPUT_ERROR);
+                ragnetto_serial.println(OUTPUT_ERROR);
             break;
         
         case COMMAND_SET_MAX_PHASE_DURATION:
             if (sscanf(params, "%" SCNu16, &configuration.phase_duration) == 1)
-                serial_println(OUTPUT_OK);
+                ragnetto_serial.println(OUTPUT_OK);
             else
-                serial_println(OUTPUT_ERROR);
+                ragnetto_serial.println(OUTPUT_ERROR);
             break;
         
         case COMMAND_SET_LIFT_HEIGHT:
             if (sscanf(params, "%" SCNu8, &configuration.leg_lift_height) == 1)
-                serial_println(OUTPUT_OK);
+                ragnetto_serial.println(OUTPUT_OK);
             else
-                serial_println(OUTPUT_ERROR);
+                ragnetto_serial.println(OUTPUT_ERROR);
             break;
 
         case COMMAND_SET_TRIM:
@@ -251,11 +251,11 @@ void Ragnetto::process_input()
                 && leg_num>=0 && leg_num<NUM_LEGS && joint_num>=0 && joint_num<3)
             {
                 configuration.servo_trim[leg_num][joint_num] = trim;
-                serial_println(OUTPUT_OK);
+                ragnetto_serial.println(OUTPUT_OK);
             }
             else
             {
-                serial_println(OUTPUT_ERROR);
+                ragnetto_serial.println(OUTPUT_ERROR);
             }
             break;
 
@@ -272,38 +272,38 @@ void Ragnetto::process_input()
             {
                 for (uint8_t joint = 0; joint < SERVOS_PER_LEG; joint++)
                 {
-                    serial_print(configuration.servo_trim[leg][joint]);
-                    serial_print(';');
+                    ragnetto_serial.print(configuration.servo_trim[leg][joint]);
+                    ragnetto_serial.print(';');
                 }
             }
-            serial_print(configuration.height_offset);
-            serial_print(';');
-            serial_print(configuration.leg_lift_height);
-            serial_print(';');
-            serial_print(configuration.phase_duration);
-            serial_print(';');
-            serial_print(configuration.leg_lift_duration_percent);
-            serial_print(';');
-            serial_print(configuration.leg_drop_duration_percent);
-            serial_println();
+            ragnetto_serial.print(configuration.height_offset);
+            ragnetto_serial.print(';');
+            ragnetto_serial.print(configuration.leg_lift_height);
+            ragnetto_serial.print(';');
+            ragnetto_serial.print(configuration.phase_duration);
+            ragnetto_serial.print(';');
+            ragnetto_serial.print(configuration.leg_lift_duration_percent);
+            ragnetto_serial.print(';');
+            ragnetto_serial.print(configuration.leg_drop_duration_percent);
+            ragnetto_serial.println();
             break;
 
         case COMMAND_SET_MODE:
             if (sscanf(params, "%" SCNi8, &mode) == 1)
-                serial_println(OUTPUT_OK);
+                ragnetto_serial.println(OUTPUT_OK);
             else
-                serial_println(OUTPUT_ERROR);
+                ragnetto_serial.println(OUTPUT_ERROR);
             break;
         
         case COMMAND_SET_LIFT_DROP_TICK:
             if (sscanf(params, "%" SCNu8 ";%" SCNu8, &configuration.leg_lift_duration_percent, &configuration.leg_drop_duration_percent) == 2)
-                serial_println(OUTPUT_OK);
+                ragnetto_serial.println(OUTPUT_OK);
             else
-                serial_println(OUTPUT_ERROR);
+                ragnetto_serial.println(OUTPUT_ERROR);
             break;
 
         default:
-            serial_println(F("Unknown command"));
+            ragnetto_serial.println(F("Unknown command"));
             break;
         }
     }
@@ -483,7 +483,7 @@ void LegMovement::interpolatePosition(float progress, Point3d &destination)
         }
         
         default:
-            serial_senderror("Invalid movement type");
+            ragnetto_serial.send_error(F("Invalid movement type"));
     }
 }
 

@@ -24,28 +24,41 @@ if not defined they will be accepted from serial (usb) port
 #ifdef USE_SOFTWARE_SERIAL
     #include <SoftwareSerial.h>
     extern SoftwareSerial ss;
-    #define SER ss
-#else
-    #define SER Serial
 #endif
 
-#define serial_print(x) SER.print(x)
-#define serial_println(x) SER.println(x)
-#define serial_senderror(x) { SER.print(F("E")); SER.println(F(x)); }
 
 
-/*
-Receive available characters from the serial line and puts them in a buffer.
-When a LF cratacter is received the buffer is returned (excluding the LF).
-This function will not block. If there are not enough characters immediately
-available to complete che line it returns nullptr.
-If the buffer becomes full the remain characters (until the LF) are discarded.
-CR characters are skipped.
-*/
-char *serial_receive_command();
+class RagnettoSerial : public Stream
+{
+public:
+	void begin();
+	void end();
+	virtual int read();
+	virtual int availableForWrite();
+    virtual int available();
+	virtual void flush();
+	virtual size_t write(uint8_t);
+	virtual size_t write(const uint8_t*, size_t);
+    virtual int peek();
+	using Print::write;
+    operator bool();
+    /*
+    Receive available characters from the serial line and puts them in a buffer.
+    When a LF cratacter is received the buffer is returned (excluding the LF).
+    This function will not block. If there are not enough characters immediately
+    available to complete che line it returns nullptr.
+    If the buffer becomes full the remain characters (until the LF) are discarded.
+    CR characters are skipped.
+    */
+    char *receive_command();
+    void send_error(const String &description);
 
-/* Start serial communication. */
-void serial_begin();
+private:
+    char command_buffer[COMMAND_BUFFER_SIZE];
+    uint8_t buffer_index = 0;
+    void setup_console();
+};
 
+extern RagnettoSerial ragnetto_serial;
 
 #endif
