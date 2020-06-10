@@ -124,11 +124,11 @@ class Joystick
 {
     public:
     /* left/right speed in mm/sec (positive = right) */
-    int8_t x;
+    int16_t x;
     /* forward/backward in mm/sec (positive is forward) */
-    int8_t y; 
+    int16_t y; 
     /* rotation in degrees/sec (positive is ccw) */
-    int8_t r;
+    int16_t r;
 
     bool idle();
 };
@@ -158,6 +158,8 @@ class Ragnetto
     void process_input();
     // Delegated by run() when in joystick walk mode; returns false if one or more legs are moved out of range
     bool runJoystickMode(unsigned long now);
+    // Prepare the next coordinated movement
+    void setupNextPhase(unsigned long now);
 };
 
 

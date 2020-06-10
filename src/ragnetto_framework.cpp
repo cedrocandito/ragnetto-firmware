@@ -21,6 +21,9 @@ static const uint8_t servos_by_leg[NUM_LEGS][SERVOS_PER_LEG] =
         {3, 4, 5},
         {6, 7, 8}};
 
+/* Character between every field of the output of command "C" */
+static const char CONFIG_SEPARATOR = ';';
+
 /* Normalize an angle to the range 0 - 2*PI; optimized for angles just out of the range */
 float normalize_0_to_2pi(float a)
 {
@@ -215,8 +218,10 @@ void Ragnetto::process_input()
         ragnetto_serial.print(*command);
         switch (*command)
         {
+            // TODO: scanning via custom function (find field end + atoi) instead of sscanf
+
         case COMMAND_JOYSTICK:
-            if (sscanf(params, "%" SCNi8 ";%" SCNi8 ";%" SCNi8, &joystick.y, &joystick.x, &joystick.r) == 3)
+            if (sscanf(params, "%" SCNi16 ";%" SCNi16 ";%" SCNi16, &joystick.y, &joystick.x, &joystick.r) == 3)
                 ragnetto_serial.println(OUTPUT_OK);
             else
                 ragnetto_serial.println(OUTPUT_ERROR);
@@ -273,17 +278,17 @@ void Ragnetto::process_input()
                 for (uint8_t joint = 0; joint < SERVOS_PER_LEG; joint++)
                 {
                     ragnetto_serial.print(configuration.servo_trim[leg][joint]);
-                    ragnetto_serial.print(';');
+                    ragnetto_serial.print(CONFIG_SEPARATOR);
                 }
             }
             ragnetto_serial.print(configuration.height_offset);
-            ragnetto_serial.print(';');
+            ragnetto_serial.print(CONFIG_SEPARATOR);
             ragnetto_serial.print(configuration.leg_lift_height);
-            ragnetto_serial.print(';');
+            ragnetto_serial.print(CONFIG_SEPARATOR);
             ragnetto_serial.print(configuration.phase_duration);
-            ragnetto_serial.print(';');
+            ragnetto_serial.print(CONFIG_SEPARATOR);
             ragnetto_serial.print(configuration.leg_lift_duration_percent);
-            ragnetto_serial.print(';');
+            ragnetto_serial.print(CONFIG_SEPARATOR);
             ragnetto_serial.print(configuration.leg_drop_duration_percent);
             ragnetto_serial.println();
             break;
@@ -356,7 +361,7 @@ bool Ragnetto::runJoystickMode(unsigned long now)
 
         if (joystick.idle())
         {
-            // joystick in null zone: lower all the legs to stance position
+            // joystick inside null zone: lower all the legs to stance position
             // (unless they are alla already in stance position)
             bool at_leat_one_leg_not_at_rest = false;
             for (int legnum=0; legnum<NUM_LEGS; legnum++)
@@ -386,40 +391,8 @@ bool Ragnetto::runJoystickMode(unsigned long now)
         }
         else
         {
-            // joystick outside null zone
-
-            float half_forward_mm_per_cycle = (float)joystick.y * (float)configuration.phase_duration / 1000.0 / 2.0;
-            float half_right_mm_per_cycle = (float)joystick.x * (float)configuration.phase_duration / 1000.0 / 2.0;
-
-            // down (pushing) legs
-            for (int legnum=walking_phase; legnum<NUM_LEGS; legnum+=2)
-            {
-                Leg *leg = &legs[legnum];
-
-                Point3d footPosition = Point3d();
-                footPosition.x = leg->baseFootPosition.x - half_right_mm_per_cycle - leg->rotation_x_per_degree * DEG_TO_RAD * joystick.r / 2.0;
-                footPosition.y = leg->baseFootPosition.y - half_forward_mm_per_cycle - leg->rotation_y_per_degree * DEG_TO_RAD * joystick.r / 2.0;
-                footPosition.z = leg->baseFootPosition.z - configuration.height_offset;
-
-                coordinatedMovement.legMovements[legnum].setLinearMovement(legs[legnum].currentPosition, footPosition);
-            }
-
-            // up legs
-            for (int legnum=1-walking_phase; legnum<NUM_LEGS; legnum+=2)
-            {
-                Leg *leg = &legs[legnum];
-                Point3d footPosition = Point3d();
-                footPosition.x = leg->baseFootPosition.x + half_right_mm_per_cycle + leg->rotation_x_per_degree * DEG_TO_RAD * joystick.r / 2.0;
-                footPosition.y = leg->baseFootPosition.y + half_forward_mm_per_cycle + leg->rotation_y_per_degree * DEG_TO_RAD * joystick.r / 2.0;
-                footPosition.z = leg->baseFootPosition.z - configuration.height_offset;
-                
-                coordinatedMovement.legMovements[legnum].setUpSlideDownMovement(legs[legnum].currentPosition,
-                        footPosition, leg->baseFootPosition.z - configuration.height_offset + configuration.leg_lift_height,
-                        configuration.leg_lift_duration_percent / 100.0,
-                        1.0 - configuration.leg_drop_duration_percent / 100.0);
-            }
-
-            coordinatedMovement.start(now, configuration.phase_duration);
+            // joystick outside null zone: program movement for next phase
+            setupNextPhase(now);
         }
     }
 
@@ -445,6 +418,57 @@ bool Ragnetto::runJoystickMode(unsigned long now)
     }
 }
 
+/* Prepare the next coordinated movement */
+void Ragnetto::setupNextPhase(unsigned long now)
+{
+    float half_forward_mm_per_phase = (float)joystick.y * (float)configuration.phase_duration / 1000.0 / 2.0;
+    float half_right_mm_per_phase = (float)joystick.x * (float)configuration.phase_duration / 1000.0 / 2.0;
+
+    float distance_mm_per_phase = 2.0 * sqrtf(half_forward_mm_per_phase * half_forward_mm_per_phase
+        + half_right_mm_per_phase * half_right_mm_per_phase);
+    
+    uint16_t phaseDuration = configuration.phase_duration;
+    /* if the distance per phase is above the maximum (where out-of-reach errors begin to appear)
+    stay at that maximum and instead lower the phase duration to compensate and reache the requested speed */
+    if (distance_mm_per_phase > MAX_PHASE_DISTANCE)
+    {
+        float normalization_factor = MAX_PHASE_DISTANCE / distance_mm_per_phase;
+        phaseDuration = (uint16_t) (configuration.phase_duration * normalization_factor);
+        // re-normalize distances to stay at maximum
+        half_forward_mm_per_phase *= normalization_factor;
+        half_right_mm_per_phase *= normalization_factor;
+    }
+
+    // down (pushing) legs
+    for (int legnum=walking_phase; legnum<NUM_LEGS; legnum+=2)
+    {
+        Leg *leg = &legs[legnum];
+
+        Point3d footPosition = Point3d();
+        footPosition.x = leg->baseFootPosition.x - half_right_mm_per_phase - leg->rotation_x_per_degree * DEG_TO_RAD * joystick.r / 2.0;
+        footPosition.y = leg->baseFootPosition.y - half_forward_mm_per_phase - leg->rotation_y_per_degree * DEG_TO_RAD * joystick.r / 2.0;
+        footPosition.z = leg->baseFootPosition.z - configuration.height_offset;
+
+        coordinatedMovement.legMovements[legnum].setLinearMovement(legs[legnum].currentPosition, footPosition);
+    }
+
+    // up legs
+    for (int legnum=1-walking_phase; legnum<NUM_LEGS; legnum+=2)
+    {
+        Leg *leg = &legs[legnum];
+        Point3d footPosition = Point3d();
+        footPosition.x = leg->baseFootPosition.x + half_right_mm_per_phase + leg->rotation_x_per_degree * DEG_TO_RAD * joystick.r / 2.0;
+        footPosition.y = leg->baseFootPosition.y + half_forward_mm_per_phase + leg->rotation_y_per_degree * DEG_TO_RAD * joystick.r / 2.0;
+        footPosition.z = leg->baseFootPosition.z - configuration.height_offset;
+        
+        coordinatedMovement.legMovements[legnum].setUpSlideDownMovement(legs[legnum].currentPosition,
+                footPosition, leg->baseFootPosition.z - configuration.height_offset + configuration.leg_lift_height,
+                configuration.leg_lift_duration_percent / 100.0,
+                1.0 - configuration.leg_drop_duration_percent / 100.0);
+    }
+
+    coordinatedMovement.start(now, phaseDuration);
+}
 
 
 void LegMovement::interpolatePosition(float progress, Point3d &destination)
@@ -544,6 +568,9 @@ bool CoordinatedMovement::stillRunning(unsigned long millis)
 {
     return running;
 }
+
+
+
 
 /* Calculate the angles to be applied to the joints in order to move the leg to
 a point in space. Coordinates are relative to attachment point of the leg, angles are absolute.

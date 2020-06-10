@@ -43,4 +43,12 @@
 // will be stopped (all legs down).
 #define JOYSTICK_NULL_ZONE 2
 
+// maximum distance to move a leg in a single phase (in mm)
+#define MAX_PHASE_DISTANCE 40.0
+
+// minimum phase duration
+#define MIN_PHASE_DURATION 200
+
+#define MAX_SPEED (MAX_PHASE_DISTANCE * 1000.0 / MIN_PHASE_DURATION)
+
 #endif
