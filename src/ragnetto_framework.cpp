@@ -21,8 +21,6 @@ static const uint8_t servos_by_leg[NUM_LEGS][SERVOS_PER_LEG] =
         {3, 4, 5},
         {6, 7, 8}};
 
-/* Character between every field of the output of command "C" */
-static const char CONFIG_SEPARATOR = ';';
 
 /* Normalize an angle to the range 0 - 2*PI; optimized for angles just out of the range */
 float normalize_0_to_2pi(float a)
@@ -215,97 +213,142 @@ void Ragnetto::process_input()
         if (strlen(command) < 1)
             return;
 
-        ragnetto_serial.print(*command);
         switch (*command)
         {
-            // TODO: scanning via custom function (find field end + atoi) instead of sscanf
-
-        case COMMAND_JOYSTICK:
-            if (sscanf(params, "%" SCNi16 ";%" SCNi16 ";%" SCNi16, &joystick.y, &joystick.x, &joystick.r) == 3)
-                ragnetto_serial.println(OUTPUT_OK);
-            else
-                ragnetto_serial.println(OUTPUT_ERROR);
-            break;
-
-        case COMMAND_SET_HEIGHT:
-            if (sscanf(params, "%" SCNi8, &configuration.height_offset) == 1)
-                ragnetto_serial.println(OUTPUT_OK);
-            else
-                ragnetto_serial.println(OUTPUT_ERROR);
-            break;
-        
-        case COMMAND_SET_MAX_PHASE_DURATION:
-            if (sscanf(params, "%" SCNu16, &configuration.phase_duration) == 1)
-                ragnetto_serial.println(OUTPUT_OK);
-            else
-                ragnetto_serial.println(OUTPUT_ERROR);
-            break;
-        
-        case COMMAND_SET_LIFT_HEIGHT:
-            if (sscanf(params, "%" SCNu8, &configuration.leg_lift_height) == 1)
-                ragnetto_serial.println(OUTPUT_OK);
-            else
-                ragnetto_serial.println(OUTPUT_ERROR);
-            break;
-
-        case COMMAND_SET_TRIM:
-            uint8_t leg_num;
-            uint8_t joint_num;
-            int8_t trim;
-            if (sscanf(params, "%" SCNu8 ";%" SCNi8 ";%" SCNi8, &leg_num, &joint_num, &trim) == 3
-                && leg_num>=0 && leg_num<NUM_LEGS && joint_num>=0 && joint_num<3)
+            case COMMAND_JOYSTICK:
             {
-                configuration.servo_trim[leg_num][joint_num] = trim;
-                ragnetto_serial.println(OUTPUT_OK);
-            }
-            else
-            {
-                ragnetto_serial.println(OUTPUT_ERROR);
-            }
-            break;
-
-        case COMMAND_READ_CONFIGURATION:
-            configuration.read();
-            break;
-
-        case COMMAND_WRITE_CONFIGURATION:
-            configuration.write();
-            break;
-
-        case COMMAND_SHOW_CONFIGURATION:
-            for (uint8_t leg = 0; leg < NUM_LEGS; leg++)
-            {
-                for (uint8_t joint = 0; joint < SERVOS_PER_LEG; joint++)
+                int n[3];
+                if (scanForNumericFields(params,n,3))
                 {
-                    ragnetto_serial.print(configuration.servo_trim[leg][joint]);
-                    ragnetto_serial.print(CONFIG_SEPARATOR);
+                    joystick.y = n[0];
+                    joystick.x = n[1];
+                    joystick.r = n[2];
                 }
+                else
+                {
+                    ragnetto_serial.println(OUTPUT_ERROR);
+                }
+                break;
             }
-            ragnetto_serial.print(configuration.height_offset);
-            ragnetto_serial.print(CONFIG_SEPARATOR);
-            ragnetto_serial.print(configuration.leg_lift_height);
-            ragnetto_serial.print(CONFIG_SEPARATOR);
-            ragnetto_serial.print(configuration.phase_duration);
-            ragnetto_serial.print(CONFIG_SEPARATOR);
-            ragnetto_serial.print(configuration.leg_lift_duration_percent);
-            ragnetto_serial.print(CONFIG_SEPARATOR);
-            ragnetto_serial.print(configuration.leg_drop_duration_percent);
-            ragnetto_serial.println();
-            break;
+           
+            case COMMAND_SET_HEIGHT:
+            {
+                int n;
+                if (scanForNumericFields(params,&n,1))
+                {
+                    configuration.height_offset = n;
+                }
+                else
+                {
+                    ragnetto_serial.println(OUTPUT_ERROR);
+                }
+                break;
+            }
+            
+            case COMMAND_SET_MAX_PHASE_DURATION:
+            {
+                int n;
+                if (scanForNumericFields(params,&n,1))
+                {
+                    configuration.phase_duration = n;
+                }
+                else
+                {
+                    ragnetto_serial.println(OUTPUT_ERROR);
+                }
+                break;
+            }
+            
+            case COMMAND_SET_LIFT_HEIGHT:
+            {
+                int n;
+                if (scanForNumericFields(params,&n,1))
+                {
+                    configuration.leg_lift_height = n;
+                }
+                else
+                {
+                    ragnetto_serial.println(OUTPUT_ERROR);
+                }
+                break;
+            }
+            
 
-        case COMMAND_SET_MODE:
-            if (sscanf(params, "%" SCNi8, &mode) == 1)
-                ragnetto_serial.println(OUTPUT_OK);
-            else
-                ragnetto_serial.println(OUTPUT_ERROR);
-            break;
+            case COMMAND_SET_TRIM:
+            {
+                int n[3];
+                if (scanForNumericFields(params,n,3) && n[0]>=0 && n[0]<NUM_LEGS && n[1]>=0 && n[1]<3)
+                {
+                    configuration.servo_trim[n[0]][n[1]] = n[2];
+                }
+                else
+                {
+                    ragnetto_serial.println(OUTPUT_ERROR);
+                }
+                break;
+            }
+           
+
+            case COMMAND_READ_CONFIGURATION:
+                configuration.read();
+                break;
+
+            case COMMAND_WRITE_CONFIGURATION:
+                configuration.write();
+                break;
+
+            case COMMAND_SHOW_CONFIGURATION:
+            {
+                for (uint8_t leg = 0; leg < NUM_LEGS; leg++)
+                {
+                    for (uint8_t joint = 0; joint < SERVOS_PER_LEG; joint++)
+                    {
+                        ragnetto_serial.print(configuration.servo_trim[leg][joint]);
+                        ragnetto_serial.print(SEPARATOR_CHAR);
+                    }
+                }
+                ragnetto_serial.print(configuration.height_offset);
+                ragnetto_serial.print(SEPARATOR_CHAR);
+                ragnetto_serial.print(configuration.leg_lift_height);
+                ragnetto_serial.print(SEPARATOR_CHAR);
+                ragnetto_serial.print(configuration.phase_duration);
+                ragnetto_serial.print(SEPARATOR_CHAR);
+                ragnetto_serial.print(configuration.leg_lift_duration_percent);
+                ragnetto_serial.print(SEPARATOR_CHAR);
+                ragnetto_serial.print(configuration.leg_drop_duration_percent);
+                ragnetto_serial.println();
+                break;
+            }
+            
+
+            case COMMAND_SET_MODE:
+            {
+                int n;
+                if (scanForNumericFields(params,&n,1))
+                {
+                    mode = n;
+                }
+                else
+                {
+                    ragnetto_serial.println(OUTPUT_ERROR);
+                }
+                break;
+            }
         
-        case COMMAND_SET_LIFT_DROP_TICK:
-            if (sscanf(params, "%" SCNu8 ";%" SCNu8, &configuration.leg_lift_duration_percent, &configuration.leg_drop_duration_percent) == 2)
-                ragnetto_serial.println(OUTPUT_OK);
-            else
-                ragnetto_serial.println(OUTPUT_ERROR);
-            break;
+            case COMMAND_SET_LIFT_DROP_TICK:
+            {
+                int n[2];
+                if (scanForNumericFields(params,n,2))
+                {
+                    configuration.leg_lift_duration_percent = n[0];
+                    configuration.leg_drop_duration_percent = n[1];
+                }
+                else
+                {
+                    ragnetto_serial.println(OUTPUT_ERROR);
+                }
+                break;
+            }
 
         default:
             ragnetto_serial.println(F("Unknown command"));
@@ -570,9 +613,58 @@ bool CoordinatedMovement::stillRunning(unsigned long millis)
 }
 
 
+/* Copis the characters in "string" in the "destination_buffer" until the end of the string
+or a separator character is found. "string" is updated with the next position after the separator
+(it will point to '\0' if there are no more characters to read). */
+void scanForNextSymbol(char * & string, char * destination_buffer, const uint8_t buffer_size)
+{
+    int n=1;    // 1 byte is reserver for the ending \0
+    while (*string != '\0' && *string != SEPARATOR_CHAR && n<buffer_size)
+    {
+        *destination_buffer++ = *string++;
+        n++;
+    }
+    
+    // terminate the output buffer
+    *destination_buffer='\0';
+
+    // if terminated by a separator character skip it
+    if (*string == SEPARATOR_CHAR)
+        string++;
+}
+
+/* Scans "string" until '\0' or the separator character are found. Convert the scanned characters
+to int and store into "number" (passed by reference).
+"string" is updated with the next position after the separator (it will
+point to '\0' if there are no more characters to read). Returns true if at least one
+character was read (but the functions, which uses atoi(), just returns 0 if the string is not
+a valid number). */
+bool scanForNextNumericField(char * & string, int &number)
+{
+    if (*string == '\0' || *string == SEPARATOR_CHAR)
+        return false;
+
+    char buf[7];   // 7 characters are enough for 16 bit numbers, sign synmbol and terminator
+    scanForNextSymbol(string,buf,sizeof(buf));
+    number = atoi(buf);
+    return strlen(buf)>0;
+}
+
+/* Scans "string" for "how_many_numbers" int's separated by SEPARATOR_CHAR; they will be stored
+in the pre-allocated "numbers" array. If all the fields were read (but not necessarily
+valid numbers) returns true. */
+bool scanForNumericFields(char * string, int *numbers, const uint8_t how_many_numbers)
+{
+    for (int i=0; i<how_many_numbers; i++)
+    {
+        if (!scanForNextNumericField(string, numbers[i]))
+            return false;
+    }
+    return true;
+}
 
 
-/* Calculate the angles to be applied to the joints in order to move the leg to
+/* Calculates the angles to be applied to the joints in order to move the leg to
 a point in space. Coordinates are relative to attachment point of the leg, angles are absolute.
 Returns true if there is a solution, false if not. */
 bool pointIn3dSpaceToJointAngles(const Point3d &p, const Leg &leg, float result_angles[])

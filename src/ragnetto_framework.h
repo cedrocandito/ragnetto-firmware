@@ -31,6 +31,9 @@
 #define OUTPUT_OK F("OK")
 #define OUTPUT_ERROR F("ERROR")
 
+// separator characted for commands and responses
+#define SEPARATOR_CHAR  ';'
+
 
 // a point in 2d space
 class Point3d
@@ -162,6 +165,25 @@ class Ragnetto
     void setupNextPhase(unsigned long now);
 };
 
+// ============ functions ===============
+
+/* Copis the characters in "string" in the "destination_buffer" until the end of the string
+or a separator character is found. "string" is updated with the next position after the separator
+(it will point to '\0' if there are no more characters to read). */
+void scanForNextSymbol(char * & string, char * destination_buffer, const uint8_t buffer_size);
+
+/* Scans "string" until '\0' or the separator character are found. Convert the scanned characters
+to int and store into "number" (passed by reference).
+"string" is updated with the next position after the separator (it will
+point to '\0' if there are no more characters to read). Returns true if at least one
+character was read (but the functions, which uses atoi(), just returns 0 if the string is not
+a valid number). */
+bool scanForNextNumericField(char * & string, int &number);
+
+/* Scans "string" for "how_many_numbers" int's separated by SEPARATOR_CHAR; they will be stored
+in the pre-allocated "numbers" array. If all the fields were read (but not necessarily
+valid numbers) returns true. */
+bool scanForNumericFields(char * string, int *numbers, const uint8_t how_many_numbers);
 
 /* Calculate the angles to be applied to the joints in order to move the leg to
 a point in space. Coordinates are relative to attachment point of the leg, angles are absolute.
