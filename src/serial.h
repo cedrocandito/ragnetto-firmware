@@ -1,6 +1,8 @@
 #ifndef SERIAL_H
 #define SERIAL_H
 
+#include <Arduino.h>
+
 /*
 if defined, commands will be accepted from software serial;
 if not defined they will be accepted from serial (usb) port
@@ -44,14 +46,15 @@ public:
     operator bool();
     /*
     Receive available characters from the serial line and puts them in a buffer.
-    When a LF cratacter is received the buffer is returned (excluding the LF).
+    When a LF character is received the buffer is returned (excluding the LF).
     This function will not block. If there are not enough characters immediately
     available to complete che line it returns nullptr.
     If the buffer becomes full the remain characters (until the LF) are discarded.
     CR characters are skipped.
     */
     char *receive_command();
-    void send_error(const String &description);
+    void send_error(const __FlashStringHelper *);
+    void send_error(const char *);
 
 private:
     char command_buffer[COMMAND_BUFFER_SIZE];

@@ -97,8 +97,13 @@ int RagnettoSerial::peek()
     return Serial.peek();
     #endif
 }
+void RagnettoSerial::send_error(const __FlashStringHelper *description)
+{
+    print('E');
+    println(description);
+}
 
-void RagnettoSerial::send_error(const String &description)
+void RagnettoSerial::send_error(const char *description)
 {
     print('E');
     println(description);
