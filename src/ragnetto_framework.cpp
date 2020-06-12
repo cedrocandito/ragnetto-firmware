@@ -367,8 +367,17 @@ void Ragnetto::run()
             {
                 for(uint8_t joint=0; joint<SERVOS_PER_LEG; joint++)
                 {
-                    set_servo_position(servos_by_leg[legnum][joint], 0, configuration.servo_trim[legnum][joint]);
+                    set_servo_position(servos_by_leg[legnum][joint], 0.0, configuration.servo_trim[legnum][joint]);
                 }
+            }
+            break;
+        
+        case MODE_CALIBRATION2:
+            for (uint8_t legnum=0; legnum<NUM_LEGS; legnum++)
+            {
+                set_servo_position(servos_by_leg[legnum][0], 0.0, configuration.servo_trim[legnum][0]);
+                set_servo_position(servos_by_leg[legnum][1], -HALF_PI * (legs[legnum].invertServo ? -1.0 : 1.0), configuration.servo_trim[legnum][1]);
+                set_servo_position(servos_by_leg[legnum][2], HALF_PI * (legs[legnum].invertServo ? -1.0 : 1.0) , configuration.servo_trim[legnum][2]);
             }
             break;
         

@@ -8,6 +8,7 @@
 
 // working modes
 #define MODE_CALIBRATION -1
+#define MODE_CALIBRATION2 -2
 #define MODE_STANCE 0
 #define MODE_JOYSTICK 1
 
