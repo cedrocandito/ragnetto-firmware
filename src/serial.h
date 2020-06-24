@@ -53,8 +53,9 @@ public:
     CR characters are skipped.
     */
     char *receive_command();
-    void send_error(const __FlashStringHelper *);
-    void send_error(const char *);
+    void send_error_legacy(const __FlashStringHelper *);
+    void send_error_legacy(const char *);
+
 
 private:
     char command_buffer[COMMAND_BUFFER_SIZE];

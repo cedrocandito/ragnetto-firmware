@@ -559,7 +559,7 @@ void LegMovement::interpolatePosition(float progress, Point3d &destination)
         }
         
         default:
-            ragnetto_serial.send_error(F("Invalid movement type"));
+            ragnetto_serial.send_error_legacy(F("Invalid movement type"));
     }
 }
 
