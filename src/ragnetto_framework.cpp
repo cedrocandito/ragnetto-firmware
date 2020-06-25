@@ -136,33 +136,10 @@ void Leg::setup(const uint8_t id, bool invert)
 // move servos to indicated position (relative to leg attachment point)
 bool Leg::moveTo(const Point3d &point)
 {
-    /*
-    LOGS("Leg ");
-    LOGN(leg_id);
-    LOGS(" [");
-    LOGN(point.x);
-    LOGS(", ");
-    LOGN(point.y);
-    LOGS(", ");
-    LOGN(point.z);
-    LOGS("mm]: ");
-    */
-
     float angles[3];
     bool ok = pointIn3dSpaceToJointAngles(point, *this, angles);
     if (ok)
     {
-        /*
-        LOGS("=> (");
-        LOGN(angles[0]);
-        LOGS(", ");
-        LOGN(angles[1]);
-        LOGS(", ");
-        LOGN(angles[2]);
-        LOGS(" rad)");
-        LOGLN();
-        */
-
         currentPosition = Point3d(point);
         set_servo_position(servos_by_leg[leg_id][0], angles[0], configuration.servo_trim[leg_id][0]);
         set_servo_position(servos_by_leg[leg_id][1], angles[1] + (invertServo ? JOINT2_OFFSET : -JOINT2_OFFSET), configuration.servo_trim[leg_id][1]);
@@ -170,16 +147,7 @@ bool Leg::moveTo(const Point3d &point)
     }
     else
     {
-        LOGS("Leg ");
-        LOGN(leg_id);
-        LOGS(" [");
-        LOGN(point.x);
-        LOGS(", ");
-        LOGN(point.y);
-        LOGS(", ");
-        LOGN(point.z);
-        LOGS("mm]: ");
-        LOGSLN("out of reach");
+        ragnetto_serial.send_error(F("Leg position not reachable"));
     }
     
     return ok;
@@ -226,7 +194,7 @@ void Ragnetto::process_input()
                 }
                 else
                 {
-                    ragnetto_serial.println(OUTPUT_ERROR);
+                    ragnetto_serial.send_error(COMMAND_ERROR, command);
                 }
                 break;
             }
@@ -240,7 +208,7 @@ void Ragnetto::process_input()
                 }
                 else
                 {
-                    ragnetto_serial.println(OUTPUT_ERROR);
+                    ragnetto_serial.send_error(COMMAND_ERROR, command);
                 }
                 break;
             }
@@ -254,7 +222,7 @@ void Ragnetto::process_input()
                 }
                 else
                 {
-                    ragnetto_serial.println(OUTPUT_ERROR);
+                    ragnetto_serial.send_error(COMMAND_ERROR, command);
                 }
                 break;
             }
@@ -268,7 +236,7 @@ void Ragnetto::process_input()
                 }
                 else
                 {
-                    ragnetto_serial.println(OUTPUT_ERROR);
+                    ragnetto_serial.send_error(COMMAND_ERROR, command);
                 }
                 break;
             }
@@ -283,7 +251,7 @@ void Ragnetto::process_input()
                 }
                 else
                 {
-                    ragnetto_serial.println(OUTPUT_ERROR);
+                    ragnetto_serial.send_error(COMMAND_ERROR, command);
                 }
                 break;
             }
@@ -299,6 +267,7 @@ void Ragnetto::process_input()
 
             case COMMAND_SHOW_CONFIGURATION:
             {
+                ragnetto_serial.start_line(LINE_TYPE_CONFIG);
                 for (uint8_t leg = 0; leg < NUM_LEGS; leg++)
                 {
                     for (uint8_t joint = 0; joint < SERVOS_PER_LEG; joint++)
@@ -316,7 +285,7 @@ void Ragnetto::process_input()
                 ragnetto_serial.print(configuration.leg_lift_duration_percent);
                 ragnetto_serial.print(SEPARATOR_CHAR);
                 ragnetto_serial.print(configuration.leg_drop_duration_percent);
-                ragnetto_serial.println();
+                ragnetto_serial.end_line();
                 break;
             }
             
@@ -330,7 +299,7 @@ void Ragnetto::process_input()
                 }
                 else
                 {
-                    ragnetto_serial.println(OUTPUT_ERROR);
+                    ragnetto_serial.send_error(COMMAND_ERROR, command);
                 }
                 break;
             }
@@ -345,13 +314,13 @@ void Ragnetto::process_input()
                 }
                 else
                 {
-                    ragnetto_serial.println(OUTPUT_ERROR);
+                    ragnetto_serial.send_error(COMMAND_ERROR, command);
                 }
                 break;
             }
 
         default:
-            ragnetto_serial.println(F("Unknown command"));
+            ragnetto_serial.send_error(COMMAND_ERROR, command);
             break;
         }
     }
@@ -559,7 +528,7 @@ void LegMovement::interpolatePosition(float progress, Point3d &destination)
         }
         
         default:
-            ragnetto_serial.send_error_legacy(F("Invalid movement type"));
+            ragnetto_serial.send_error(F("Invalid movement type"));
     }
 }
 

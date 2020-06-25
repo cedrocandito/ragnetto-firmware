@@ -29,8 +29,7 @@
 #define COMMAND_SET_LIFT_DROP_TICK 'Q'
 
 // output content
-#define OUTPUT_OK F("OK")
-#define OUTPUT_ERROR F("ERROR")
+#define COMMAND_ERROR F("CMD_ERROR")
 
 // separator characted for commands and responses
 #define SEPARATOR_CHAR  ';'
@@ -164,6 +163,9 @@ class Ragnetto
     bool runJoystickMode(unsigned long now);
     // Prepare the next coordinated movement
     void setupNextPhase(unsigned long now);
+
+    private:
+    void commandError(char * commandText);
 };
 
 // ============ functions ===============

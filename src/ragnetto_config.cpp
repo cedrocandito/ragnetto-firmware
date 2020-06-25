@@ -22,7 +22,7 @@ void Configuration::read()
     if (compare_eeprom_block(CONFIG_BASE_ADDR, (uint8_t*)version, CONFIG_ID_SIZE))
     {
         // configuration is valid, read it
-        LOGSLN("Configuration in EEPROM is valid");
+        ragnetto_serial.send_info(F("Configuration in EEPROM is valid"));
         // read stored config length
         uint16_t size;
         read_eeprom_block(sizeof(version), (uint8_t*)&size, sizeof(config_size));
@@ -32,17 +32,17 @@ void Configuration::read()
     else
     {
         // configuration is not valid, keep default
-        LOGSLN("Configuration in EEPROM is not valid. Default values will be used.");
+        ragnetto_serial.send_info(F("Configuration in EEPROM is not valid. Default values will be used."));
     }
 }
 
 /* Write in-memory configuration to EEPROM. */
 void Configuration::write()
 {
-    LOGSLN("Writing configuration to EEPROM");
+    ragnetto_serial.send_info(F("Writing configuration to EEPROM"));
     config_size = sizeof(Configuration);
     write_eeprom_block(CONFIG_BASE_ADDR, (uint8_t*)this, sizeof(Configuration));
-    LOGSLN("Configuration written");
+    LOG_LINE("Configuration written");
 }
 
 /* Read a block of bytes from EEPROM into a buffer. */

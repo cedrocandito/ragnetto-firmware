@@ -8,7 +8,6 @@ Ragnetto ragnetto;
 
 void setup()
 {
-  ragnetto_serial.begin();
   setup_hardware();
   configuration.read();
 }

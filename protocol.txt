@@ -2,11 +2,12 @@ Serial protocol
 ===============
 
 Lines are terminated by LF (0x0a).
-Output is the first letter of the command followed by:
-   OK (command was accepted)
-   ERROR (there was an error processingthe command)
-   custom data depending on the command
+C;xxxxxxx   congiguration data
+I;xxxxxxx   information
+D;xxxxxxx   debug log
+E;xxxxxxx   error
 
+Commands:
 
 Txxx;yyy;vvv
   set trim value for joint yyy (0-2) of leg xxx (0-5) to vvv.
@@ -28,7 +29,7 @@ W
 
 C
   Show configuration.
-  Custom data in output is a line of semicolon-separated numbers:
+  Custom data in output is a line of semicolon-separated numbers starting with "C;":
   0-17: trim for servos 1-18
   18: height offset
   19: leg lift height

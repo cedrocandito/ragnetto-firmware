@@ -1,34 +1,17 @@
 #include <Arduino.h>
 #include "serial.h"
 #include "logging.h"
+#include "ragnetto.h"
 
 
-#ifdef USE_SOFTWARE_SERIAL
+#ifdef BLUETOOTH_SERIAL
 SoftwareSerial ss(SOFTWARESERIAL_RX_PIN, SOFTWARESERIAL_TX_PIN);
 #endif
 
 
-/* Start serial communication on serial port (always) and on software
-serial (if defined). */
-void RagnettoSerial::begin()
-{
-    setup_console();
-    #ifdef USE_SOFTWARE_SERIAL
-    ss.begin(HARDWARE_SERIAL_BAUDRATE);
-    #endif
-}
-
-void RagnettoSerial::end()
-{
-    Serial.end();
-    #ifdef USE_SOFTWARE_SERIAL
-    ss.end();
-    #endif
-}
-
 int RagnettoSerial::read()
 {
-    #ifdef USE_SOFTWARE_SERIAL
+    #ifdef BLUETOOTH_SERIAL
     return ss.read();
     #else
     return Serial.read();
@@ -37,7 +20,7 @@ int RagnettoSerial::read()
 
 int RagnettoSerial::availableForWrite()
 {
-    #ifdef USE_SOFTWARE_SERIAL
+    #ifdef BLUETOOTH_SERIAL
     return ss.availableForWrite();
     #else
     return Serial.availableForWrite();
@@ -46,7 +29,7 @@ int RagnettoSerial::availableForWrite()
 
 int RagnettoSerial::available()
 {
-    #ifdef USE_SOFTWARE_SERIAL
+    #ifdef BLUETOOTH_SERIAL
     return ss.available();
     #else
     return Serial.available();
@@ -55,7 +38,7 @@ int RagnettoSerial::available()
 
 void RagnettoSerial::flush()
 {
-    #ifdef USE_SOFTWARE_SERIAL
+    #ifdef BLUETOOTH_SERIAL
     ss.flush();
     #else
     Serial.flush();
@@ -64,7 +47,7 @@ void RagnettoSerial::flush()
 
 size_t RagnettoSerial::write(uint8_t x)
 {
-    #ifdef USE_SOFTWARE_SERIAL
+    #ifdef BLUETOOTH_SERIAL
     return ss.write(x);
     #else
     return Serial.write(x);
@@ -73,7 +56,7 @@ size_t RagnettoSerial::write(uint8_t x)
 
 size_t RagnettoSerial::write(const uint8_t* pointer, size_t size)
 {
-    #ifdef USE_SOFTWARE_SERIAL
+    #ifdef BLUETOOTH_SERIAL
     return ss.write(pointer, size);
     #else
     return Serial.write(pointer, size);
@@ -82,7 +65,7 @@ size_t RagnettoSerial::write(const uint8_t* pointer, size_t size)
 
 RagnettoSerial::operator bool()
 {
-    #ifdef USE_SOFTWARE_SERIAL
+    #ifdef BLUETOOTH_SERIAL
     return ss;
     #else
     return Serial;
@@ -91,40 +74,83 @@ RagnettoSerial::operator bool()
 
 int RagnettoSerial::peek()
 {
-    #ifdef USE_SOFTWARE_SERIAL
+    #ifdef BLUETOOTH_SERIAL
     return ss.peek();
     #else
     return Serial.peek();
     #endif
 }
-void RagnettoSerial::send_error_legacy(const __FlashStringHelper *description)
+
+void RagnettoSerial::start_line(char type)
 {
-    print('E');
-    println(description);
+    print(type);
+    print(LINE_TYPE_SEPARATOR_CHARACTER);
 }
 
-void RagnettoSerial::send_error_legacy(const char *description)
+void RagnettoSerial::end_line()
 {
-    print('E');
-    println(description);
+    println();
 }
 
-/* Initialize console serial port. */
-void RagnettoSerial::setup_console()
+void RagnettoSerial::send_line(char type, const __FlashStringHelper * message)
 {
+    start_line(type);
+    println(message);
+}
+
+void RagnettoSerial::send_info(const __FlashStringHelper * message)
+{
+
+    send_line(LINE_TYPE_INFO, message);
+}
+
+bool RagnettoSerial::send_error(const __FlashStringHelper * message, char * extrainfo)
+{
+    if (millis() >= timestamp_next_error_can_be_sent)
+    {
+        start_line(LINE_TYPE_ERROR);
+        print(message);
+        if (extrainfo != nullptr)
+        {
+            print(F(": "));
+            print(extrainfo);
+        }
+        end_line();
+
+        timestamp_next_error_can_be_sent = millis() + MIN_TIME_BETWEEN_ERRORS;
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+bool RagnettoSerial::send_error(const __FlashStringHelper * message)
+{
+    return send_error(message, nullptr);
+}
+
+void RagnettoSerial::send_debug(const __FlashStringHelper * message)
+{
+    send_line(LINE_TYPE_DEBUG, message);
+}
+
+/* Initialize serial port. */
+RagnettoSerial::RagnettoSerial()
+{
+    #ifdef BLUETOOTH_SERIAL
+    ss.begin(SOFTWARE_SERIAL_BAUDRATE);
+    while(!ss)
+    {
+        delay(1);
+    }
+    #else
     Serial.begin(HARDWARE_SERIAL_BAUDRATE);
-    #ifdef LOGGING_ENABLED
-    unsigned long t1 = micros();
-    #endif
     while(!Serial)
     {
-        delay(2);
+        delay(1);
     }
-    #ifdef LOGGING_ENABLED
-    unsigned long t2 = micros();
-    LOGS("Had to wait ");
-    LOGN(t2-t1);
-    LOGSLN(" microseconds for the console serial port to become active.");
     #endif
 }
 

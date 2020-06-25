@@ -23,7 +23,7 @@ uint16_t angle_to_pwm_controller_units(float angle)
 void setup_hardware()
 {
     setup_pwm_controllers();
-    LOGSLN("Hardware setup complete.");
+    LOG_LINE("Hardware setup complete.");
 }
 
 /* Initialize PWM controllers. */
@@ -31,8 +31,10 @@ void setup_pwm_controllers()
 {
     for (uint8_t i = 0; i < NUM_PWM_CONTROLLERS; i++)
     {
-        LOGS("Initializing PWM controller at address ");
-        LOGNLN(PWM_BASE_ADDR + i);
+        ragnetto_serial.start_line(LINE_TYPE_INFO);
+        ragnetto_serial.print("Initializing PWM controller at address ");
+        ragnetto_serial.print(PWM_BASE_ADDR + i);
+        ragnetto_serial.end_line();
         pwm[i] = Adafruit_PWMServoDriver(PWM_BASE_ADDR + i);
         pwm[i].begin();
         pwm[i].setPWMFreq(FREQ);
@@ -45,21 +47,6 @@ void set_servo_position(uint8_t servo_id, float angle, int8_t trim)
 {
     uint8_t controller_id = servo_id / CHANNELS_PER_PWM_CONTROLLER;
     uint8_t channel = servo_id % CHANNELS_PER_PWM_CONTROLLER;
-
-    /*
-    LOGLN();
-    LOGS("Channel ");
-    LOGN(controller_id);
-    LOGS(":");
-    LOGN(channel);
-    LOGS(" set to ");
-    LOGN(angle);
-    LOGS(" rad,  ");
-    LOGN(angle * PULSE_MICROS_OFFSET_90_DEG / HALF_PI + PULSE_MICROS_CENTER);
-    LOGS(" micros,  ");
-    LOGN(angle_to_pwm_controller_units(angle));
-    LOGSLN(" units");
-    */
-
+    
     pwm[controller_id].setPWM(channel, 0, angle_to_pwm_controller_units(angle) + trim);
 }

@@ -2,39 +2,36 @@
 #define SERIAL_H
 
 #include <Arduino.h>
+#include "ragnetto.h"
 
-/*
-if defined, commands will be accepted from software serial;
-if not defined they will be accepted from serial (usb) port
-*/
-//#define USE_SOFTWARE_SERIAL
+// First chraracter for an error message
+#define LINE_TYPE_ERROR 'E'
+// First chraracter for a debug message
+#define LINE_TYPE_DEBUG 'D'
+// First chraracter for an info message
+#define LINE_TYPE_INFO 'I'
+// First chraracter for configuration data
+#define LINE_TYPE_CONFIG 'C'
 
-// size of the buffer, including the end of string character.
-#define COMMAND_BUFFER_SIZE 32
-
-// transmit and receive pins for software serial
-#define SOFTWARESERIAL_TX_PIN 3
-#define SOFTWARESERIAL_RX_PIN 2
-
-// baudrate for serial port (usb)
-#define HARDWARE_SERIAL_BAUDRATE 9600
-
-// baudrate for software serial
-#define SOFTWARE_SERIAL_BAUDRATE 9600
+// Separator between line type and content
+#define LINE_TYPE_SEPARATOR_CHARACTER ';'
 
 
-#ifdef USE_SOFTWARE_SERIAL
+#ifdef BLUETOOTH_SERIAL
     #include <SoftwareSerial.h>
     extern SoftwareSerial ss;
 #endif
 
 
 
+/*
+Wrapper for Serial (USB) and SoftwareSerial (Bluetooth module).
+Contains methods for reading commands and sending responses and errors.
+*/
 class RagnettoSerial : public Stream
 {
 public:
-	void begin();
-	void end();
+    RagnettoSerial();
 	virtual int read();
 	virtual int availableForWrite();
     virtual int available();
@@ -53,14 +50,19 @@ public:
     CR characters are skipped.
     */
     char *receive_command();
-    void send_error_legacy(const __FlashStringHelper *);
-    void send_error_legacy(const char *);
-
+    void start_line(char type);
+    void end_line();
+    void send_line(char type, const char * message);
+    void send_line(char type, const __FlashStringHelper * message);
+    void send_debug(const __FlashStringHelper * message);
+    void send_info(const __FlashStringHelper * message);
+    bool send_error(const __FlashStringHelper * message, char * extrainfo);
+    bool send_error(const __FlashStringHelper * message);
 
 private:
     char command_buffer[COMMAND_BUFFER_SIZE];
     uint8_t buffer_index = 0;
-    void setup_console();
+    unsigned long timestamp_next_error_can_be_sent = 0;
 };
 
 extern RagnettoSerial ragnetto_serial;

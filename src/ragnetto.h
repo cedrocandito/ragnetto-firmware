@@ -49,6 +49,34 @@
 // minimum phase duration
 #define MIN_PHASE_DURATION 200
 
+// max speed in mm/sec (calculated)
 #define MAX_SPEED (MAX_PHASE_DISTANCE * 1000.0 / MIN_PHASE_DURATION)
+
+// max rotation speed in deg/sec (calculated)
+#define MAX_ROTATION_SPEED 60
+
+// if defined, commands will be accepted from software serial;
+// if not defined they will be accepted from serial (usb) port
+#define BLUETOOTH_SERIAL
+
+// size of the buffer, including the end of string character.
+#define COMMAND_BUFFER_SIZE 32
+
+// transmit and receive pins for software serial
+#define SOFTWARESERIAL_TX_PIN 3
+#define SOFTWARESERIAL_RX_PIN 2
+
+// baudrate for serial port (usb)
+#define HARDWARE_SERIAL_BAUDRATE 9600
+
+// baudrate for software serial (bluetooth)
+#define SOFTWARE_SERIAL_BAUDRATE 9600
+
+// enable verbose info? (comment to disable)
+#define LOGGING_ENABLED
+
+// minimum time (in milliseconds) between error lines sent via serial
+// (if not limited they will clutter the port and cause delays)
+#define MIN_TIME_BETWEEN_ERRORS 100
 
 #endif
