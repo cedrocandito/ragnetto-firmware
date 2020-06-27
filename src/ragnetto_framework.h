@@ -18,6 +18,7 @@
 
 // serial commands
 #define COMMAND_JOYSTICK 'J'
+#define COMMAND_JOYSTICK_PERCENT 'K'
 #define COMMAND_SET_TRIM 'T'
 #define COMMAND_SET_HEIGHT 'H'
 #define COMMAND_SET_LIFT_HEIGHT 'L'
@@ -114,7 +115,6 @@ class CoordinatedMovement
     unsigned long endMillis;
     LegMovement legMovements[NUM_LEGS];
     bool running;
-    uint16_t samples;
 
     void start(long durationMillis);
     void start(unsigned long newStartMillis, long durationMillis);

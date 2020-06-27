@@ -46,6 +46,9 @@
 // maximum distance to move a leg in a single phase (in mm)
 #define MAX_PHASE_DISTANCE 40.0
 
+// maximum angle to rotate in a single phase (in degrees)
+#define MAX_PHASE_ROTATION 30.0
+
 // minimum phase duration
 #define MIN_PHASE_DURATION 200
 
@@ -53,7 +56,7 @@
 #define MAX_SPEED (MAX_PHASE_DISTANCE * 1000.0 / MIN_PHASE_DURATION)
 
 // max rotation speed in deg/sec (calculated)
-#define MAX_ROTATION_SPEED 60
+#define MAX_ROTATION_SPEED (MAX_PHASE_ROTATION * 1000.0 / MIN_PHASE_DURATION)
 
 // if defined, commands will be accepted from software serial;
 // if not defined they will be accepted from serial (usb) port

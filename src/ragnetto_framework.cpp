@@ -198,6 +198,22 @@ void Ragnetto::process_input()
                 }
                 break;
             }
+
+            case COMMAND_JOYSTICK_PERCENT:
+            {
+                int n[3];
+                if (scanForNumericFields(params,n,3))
+                {
+                    joystick.y = n[0] / 100.0f * MAX_SPEED;
+                    joystick.x = n[1] / 100.0f * MAX_SPEED;
+                    joystick.r = n[2] / 100.0f * MAX_ROTATION_SPEED;
+                }
+                else
+                {
+                    ragnetto_serial.send_error(COMMAND_ERROR, command);
+                }
+                break;
+            }
            
             case COMMAND_SET_HEIGHT:
             {
@@ -240,7 +256,6 @@ void Ragnetto::process_input()
                 }
                 break;
             }
-            
 
             case COMMAND_SET_TRIM:
             {
@@ -256,7 +271,6 @@ void Ragnetto::process_input()
                 break;
             }
            
-
             case COMMAND_READ_CONFIGURATION:
                 configuration.read();
                 break;
@@ -371,12 +385,6 @@ bool Ragnetto::runJoystickMode(unsigned long now)
 {
     if (!coordinatedMovement.stillRunning(now))
     {
-        /* ??????
-        LOGN(coordinatedMovement.samples);
-        LOGS("/");
-        LOGNLN(configuration.phase_duration);
-        */
-        
         // new phase
         walking_phase = 1 - walking_phase;
 
@@ -442,22 +450,25 @@ bool Ragnetto::runJoystickMode(unsigned long now)
 /* Prepare the next coordinated movement */
 void Ragnetto::setupNextPhase(unsigned long now)
 {
-    float half_forward_mm_per_phase = (float)joystick.y * (float)configuration.phase_duration / 1000.0 / 2.0;
-    float half_right_mm_per_phase = (float)joystick.x * (float)configuration.phase_duration / 1000.0 / 2.0;
+    float half_forward_mm_per_phase = (float)joystick.y * (float)configuration.phase_duration / 1000.0 * 0.5;
+    float half_right_mm_per_phase = (float)joystick.x * (float)configuration.phase_duration / 1000.0 * 0.5;
+    float half_rotation_deg_per_phase = (float)joystick.r * (float)configuration.phase_duration / 1000.0 * 0.5;
 
     float distance_mm_per_phase = 2.0 * sqrtf(half_forward_mm_per_phase * half_forward_mm_per_phase
         + half_right_mm_per_phase * half_right_mm_per_phase);
     
     uint16_t phaseDuration = configuration.phase_duration;
     /* if the distance per phase is above the maximum (where out-of-reach errors begin to appear)
-    stay at that maximum and instead lower the phase duration to compensate and reache the requested speed */
-    if (distance_mm_per_phase > MAX_PHASE_DISTANCE)
+    stay at that maximum and instead lower the phase duration to compensate and reach the requested speed */
+    if ((distance_mm_per_phase > MAX_PHASE_DISTANCE) || (half_rotation_deg_per_phase > MAX_PHASE_ROTATION * 0.5))
     {
-        float normalization_factor = MAX_PHASE_DISTANCE / distance_mm_per_phase;
-        phaseDuration = (uint16_t) (configuration.phase_duration * normalization_factor);
+        float normalization_factor = min(MAX_PHASE_DISTANCE / distance_mm_per_phase, MAX_PHASE_ROTATION * 0.5 / half_rotation_deg_per_phase);
+        // don't lower the phase duration below the absolute limit
+        phaseDuration = (uint16_t) max(configuration.phase_duration * normalization_factor, MIN_PHASE_DURATION);
         // re-normalize distances to stay at maximum
         half_forward_mm_per_phase *= normalization_factor;
         half_right_mm_per_phase *= normalization_factor;
+        half_rotation_deg_per_phase *= normalization_factor;
     }
 
     // down (pushing) legs
@@ -466,8 +477,8 @@ void Ragnetto::setupNextPhase(unsigned long now)
         Leg *leg = &legs[legnum];
 
         Point3d footPosition = Point3d();
-        footPosition.x = leg->baseFootPosition.x - half_right_mm_per_phase - leg->rotation_x_per_degree * DEG_TO_RAD * joystick.r / 2.0;
-        footPosition.y = leg->baseFootPosition.y - half_forward_mm_per_phase - leg->rotation_y_per_degree * DEG_TO_RAD * joystick.r / 2.0;
+        footPosition.x = leg->baseFootPosition.x - half_right_mm_per_phase - leg->rotation_x_per_degree * DEG_TO_RAD * half_rotation_deg_per_phase;
+        footPosition.y = leg->baseFootPosition.y - half_forward_mm_per_phase - leg->rotation_y_per_degree * DEG_TO_RAD * half_rotation_deg_per_phase;
         footPosition.z = leg->baseFootPosition.z - configuration.height_offset;
 
         coordinatedMovement.legMovements[legnum].setLinearMovement(legs[legnum].currentPosition, footPosition);
@@ -478,8 +489,8 @@ void Ragnetto::setupNextPhase(unsigned long now)
     {
         Leg *leg = &legs[legnum];
         Point3d footPosition = Point3d();
-        footPosition.x = leg->baseFootPosition.x + half_right_mm_per_phase + leg->rotation_x_per_degree * DEG_TO_RAD * joystick.r / 2.0;
-        footPosition.y = leg->baseFootPosition.y + half_forward_mm_per_phase + leg->rotation_y_per_degree * DEG_TO_RAD * joystick.r / 2.0;
+        footPosition.x = leg->baseFootPosition.x + half_right_mm_per_phase + leg->rotation_x_per_degree * DEG_TO_RAD * half_rotation_deg_per_phase;
+        footPosition.y = leg->baseFootPosition.y + half_forward_mm_per_phase + leg->rotation_y_per_degree * DEG_TO_RAD * half_rotation_deg_per_phase;
         footPosition.z = leg->baseFootPosition.z - configuration.height_offset;
         
         coordinatedMovement.legMovements[legnum].setUpSlideDownMovement(legs[legnum].currentPosition,
@@ -558,7 +569,6 @@ void CoordinatedMovement::start(unsigned long newStartMillis, long durationMilli
 {
     startMillis = newStartMillis;
     endMillis = startMillis + durationMillis;
-    samples = 0;
     running = true;
 }
 
@@ -581,8 +591,6 @@ void CoordinatedMovement::interpolatePositions(unsigned long millis, Point3d des
     {
         legMovements[i].interpolatePosition(progress, destinationPoints[i]);
     }
-
-    samples++;
 }
 
 bool CoordinatedMovement::stillRunning(unsigned long millis)

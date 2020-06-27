@@ -143,13 +143,13 @@ RagnettoSerial::RagnettoSerial()
     ss.begin(SOFTWARE_SERIAL_BAUDRATE);
     while(!ss)
     {
-        delay(1);
+        delay(100);
     }
     #else
     Serial.begin(HARDWARE_SERIAL_BAUDRATE);
     while(!Serial)
     {
-        delay(1);
+        delay(100);
     }
     #endif
 }
