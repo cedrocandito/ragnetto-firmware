@@ -41,7 +41,7 @@
 
 // when all values of the joystick are below this threshold the robot
 // will be stopped (all legs down).
-#define JOYSTICK_NULL_ZONE 2
+#define JOYSTICK_NULL_ZONE 10
 
 // maximum distance to move a leg in a single phase (in mm)
 #define MAX_PHASE_DISTANCE 40.0
@@ -56,7 +56,8 @@
 #define MAX_SPEED (MAX_PHASE_DISTANCE * 1000.0 / MIN_PHASE_DURATION)
 
 // max rotation speed in deg/sec (calculated)
-#define MAX_ROTATION_SPEED (MAX_PHASE_ROTATION * 1000.0 / MIN_PHASE_DURATION)
+//#define MAX_ROTATION_SPEED (MAX_PHASE_ROTATION * 1000.0 / MIN_PHASE_DURATION)
+#define MAX_ROTATION_SPEED 90
 
 // if defined, commands will be accepted from software serial;
 // if not defined they will be accepted from serial (usb) port
@@ -76,7 +77,7 @@
 #define SOFTWARE_SERIAL_BAUDRATE 9600
 
 // enable verbose info? (comment to disable)
-#define LOGGING_ENABLED
+//#define LOGGING_ENABLED
 
 // minimum time (in milliseconds) between error lines sent via serial
 // (if not limited they will clutter the port and cause delays)
