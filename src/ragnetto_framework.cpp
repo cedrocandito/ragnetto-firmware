@@ -131,6 +131,9 @@ void Leg::setup(const uint8_t id, bool invert)
 
     // initialize other fields
     invertServo = invert;
+
+    // set current position
+    currentPosition = baseFootPosition;
 }
 
 // move servos to indicated position (relative to leg attachment point)
@@ -167,175 +170,179 @@ Ragnetto::Ragnetto()
     }
 
     // setup initial mode
-    mode = MODE_STANCE;
+    mode = STARTING_MODE;
 }
 
 void Ragnetto::process_input()
 {
-    char *command = ragnetto_serial.receive_command();
-    char *params = command+1;
+    char *command;
 
-    if (command != nullptr)
+    while ((command = ragnetto_serial.receive_command()) != nullptr)
     {
-        // ignore empty commands
-        if (strlen(command) < 1)
-            return;
+        char *params = command+1;
 
-        switch (*command)
+        if (command != nullptr)
         {
-            case COMMAND_JOYSTICK:
-            {
-                int n[3];
-                if (scanForNumericFields(params,n,3))
-                {
-                    joystick.y = n[0];
-                    joystick.x = n[1];
-                    joystick.r = n[2];
-                }
-                else
-                {
-                    ragnetto_serial.send_error(COMMAND_ERROR, command);
-                }
-                break;
-            }
+            // ignore empty commands
+            if (strlen(command) < 1)
+                return;
 
-            case COMMAND_JOYSTICK_PERCENT:
+            switch (*command)
             {
-                int n[3];
-                if (scanForNumericFields(params,n,3))
+                case COMMAND_JOYSTICK:
                 {
-                    joystick.y = n[0] / 100.0f * MAX_SPEED;
-                    joystick.x = n[1] / 100.0f * MAX_SPEED;
-                    joystick.r = n[2] / 100.0f * MAX_ROTATION_SPEED;
-                }
-                else
-                {
-                    ragnetto_serial.send_error(COMMAND_ERROR, command);
-                }
-                break;
-            }
-           
-            case COMMAND_SET_HEIGHT:
-            {
-                int n;
-                if (scanForNumericFields(params,&n,1))
-                {
-                    configuration.height_offset = n;
-                }
-                else
-                {
-                    ragnetto_serial.send_error(COMMAND_ERROR, command);
-                }
-                break;
-            }
-            
-            case COMMAND_SET_MAX_PHASE_DURATION:
-            {
-                int n;
-                if (scanForNumericFields(params,&n,1))
-                {
-                    configuration.phase_duration = n;
-                }
-                else
-                {
-                    ragnetto_serial.send_error(COMMAND_ERROR, command);
-                }
-                break;
-            }
-            
-            case COMMAND_SET_LIFT_HEIGHT:
-            {
-                int n;
-                if (scanForNumericFields(params,&n,1))
-                {
-                    configuration.leg_lift_height = n;
-                }
-                else
-                {
-                    ragnetto_serial.send_error(COMMAND_ERROR, command);
-                }
-                break;
-            }
-
-            case COMMAND_SET_TRIM:
-            {
-                int n[3];
-                if (scanForNumericFields(params,n,3) && n[0]>=0 && n[0]<NUM_LEGS && n[1]>=0 && n[1]<3)
-                {
-                    configuration.servo_trim[n[0]][n[1]] = n[2];
-                }
-                else
-                {
-                    ragnetto_serial.send_error(COMMAND_ERROR, command);
-                }
-                break;
-            }
-           
-            case COMMAND_READ_CONFIGURATION:
-                configuration.read();
-                break;
-
-            case COMMAND_WRITE_CONFIGURATION:
-                configuration.write();
-                break;
-
-            case COMMAND_SHOW_CONFIGURATION:
-            {
-                ragnetto_serial.start_line(LINE_TYPE_CONFIG);
-                for (uint8_t leg = 0; leg < NUM_LEGS; leg++)
-                {
-                    for (uint8_t joint = 0; joint < SERVOS_PER_LEG; joint++)
+                    int n[3];
+                    if (scanForNumericFields(params,n,3))
                     {
-                        ragnetto_serial.print(configuration.servo_trim[leg][joint]);
-                        ragnetto_serial.print(SEPARATOR_CHAR);
+                        joystick.y = n[0];
+                        joystick.x = n[1];
+                        joystick.r = n[2];
                     }
+                    else
+                    {
+                        ragnetto_serial.send_error(COMMAND_ERROR, command);
+                    }
+                    break;
                 }
-                ragnetto_serial.print(configuration.height_offset);
-                ragnetto_serial.print(SEPARATOR_CHAR);
-                ragnetto_serial.print(configuration.leg_lift_height);
-                ragnetto_serial.print(SEPARATOR_CHAR);
-                ragnetto_serial.print(configuration.phase_duration);
-                ragnetto_serial.print(SEPARATOR_CHAR);
-                ragnetto_serial.print(configuration.leg_lift_duration_percent);
-                ragnetto_serial.print(SEPARATOR_CHAR);
-                ragnetto_serial.print(configuration.leg_drop_duration_percent);
-                ragnetto_serial.end_line();
-                break;
-            }
+
+                case COMMAND_JOYSTICK_PERCENT:
+                {
+                    int n[3];
+                    if (scanForNumericFields(params,n,3))
+                    {
+                        joystick.y = n[0] / 100.0f * MAX_SPEED;
+                        joystick.x = n[1] / 100.0f * MAX_SPEED;
+                        joystick.r = n[2] / 100.0f * MAX_ROTATION_SPEED;
+                    }
+                    else
+                    {
+                        ragnetto_serial.send_error(COMMAND_ERROR, command);
+                    }
+                    break;
+                }
             
+                case COMMAND_SET_HEIGHT:
+                {
+                    int n;
+                    if (scanForNumericFields(params,&n,1))
+                    {
+                        configuration.height_offset = n;
+                    }
+                    else
+                    {
+                        ragnetto_serial.send_error(COMMAND_ERROR, command);
+                    }
+                    break;
+                }
+                
+                case COMMAND_SET_MAX_PHASE_DURATION:
+                {
+                    int n;
+                    if (scanForNumericFields(params,&n,1))
+                    {
+                        configuration.phase_duration = n;
+                    }
+                    else
+                    {
+                        ragnetto_serial.send_error(COMMAND_ERROR, command);
+                    }
+                    break;
+                }
+                
+                case COMMAND_SET_LIFT_HEIGHT:
+                {
+                    int n;
+                    if (scanForNumericFields(params,&n,1))
+                    {
+                        configuration.leg_lift_height = n;
+                    }
+                    else
+                    {
+                        ragnetto_serial.send_error(COMMAND_ERROR, command);
+                    }
+                    break;
+                }
 
-            case COMMAND_SET_MODE:
-            {
-                int n;
-                if (scanForNumericFields(params,&n,1))
+                case COMMAND_SET_TRIM:
                 {
-                    mode = n;
+                    int n[3];
+                    if (scanForNumericFields(params,n,3) && n[0]>=0 && n[0]<NUM_LEGS && n[1]>=0 && n[1]<3)
+                    {
+                        configuration.servo_trim[n[0]][n[1]] = n[2];
+                    }
+                    else
+                    {
+                        ragnetto_serial.send_error(COMMAND_ERROR, command);
+                    }
+                    break;
                 }
-                else
+            
+                case COMMAND_READ_CONFIGURATION:
+                    configuration.read();
+                    break;
+
+                case COMMAND_WRITE_CONFIGURATION:
+                    configuration.write();
+                    break;
+
+                case COMMAND_SHOW_CONFIGURATION:
                 {
-                    ragnetto_serial.send_error(COMMAND_ERROR, command);
+                    ragnetto_serial.start_line(LINE_TYPE_CONFIG);
+                    for (uint8_t leg = 0; leg < NUM_LEGS; leg++)
+                    {
+                        for (uint8_t joint = 0; joint < SERVOS_PER_LEG; joint++)
+                        {
+                            ragnetto_serial.print(configuration.servo_trim[leg][joint]);
+                            ragnetto_serial.print(SEPARATOR_CHAR);
+                        }
+                    }
+                    ragnetto_serial.print(configuration.height_offset);
+                    ragnetto_serial.print(SEPARATOR_CHAR);
+                    ragnetto_serial.print(configuration.leg_lift_height);
+                    ragnetto_serial.print(SEPARATOR_CHAR);
+                    ragnetto_serial.print(configuration.phase_duration);
+                    ragnetto_serial.print(SEPARATOR_CHAR);
+                    ragnetto_serial.print(configuration.leg_lift_duration_percent);
+                    ragnetto_serial.print(SEPARATOR_CHAR);
+                    ragnetto_serial.print(configuration.leg_drop_duration_percent);
+                    ragnetto_serial.end_line();
+                    break;
                 }
+                
+
+                case COMMAND_SET_MODE:
+                {
+                    int n;
+                    if (scanForNumericFields(params,&n,1))
+                    {
+                        mode = n;
+                    }
+                    else
+                    {
+                        ragnetto_serial.send_error(COMMAND_ERROR, command);
+                    }
+                    break;
+                }
+            
+                case COMMAND_SET_LIFT_DROP_TICK:
+                {
+                    int n[2];
+                    if (scanForNumericFields(params,n,2))
+                    {
+                        configuration.leg_lift_duration_percent = n[0];
+                        configuration.leg_drop_duration_percent = n[1];
+                    }
+                    else
+                    {
+                        ragnetto_serial.send_error(COMMAND_ERROR, command);
+                    }
+                    break;
+                }
+
+            default:
+                ragnetto_serial.send_error(COMMAND_ERROR, command);
                 break;
             }
-        
-            case COMMAND_SET_LIFT_DROP_TICK:
-            {
-                int n[2];
-                if (scanForNumericFields(params,n,2))
-                {
-                    configuration.leg_lift_duration_percent = n[0];
-                    configuration.leg_drop_duration_percent = n[1];
-                }
-                else
-                {
-                    ragnetto_serial.send_error(COMMAND_ERROR, command);
-                }
-                break;
-            }
-
-        default:
-            ragnetto_serial.send_error(COMMAND_ERROR, command);
-            break;
         }
     }
 }
@@ -369,12 +376,7 @@ void Ragnetto::run()
             break;
 
         case MODE_STANCE:
-            for (uint8_t legnum=0; legnum<NUM_LEGS; legnum++)
-            {
-                Point3d footPosition = Point3d(legs[legnum].baseFootPosition);
-                footPosition.z -= configuration.height_offset;
-                legs[legnum].moveTo(footPosition);
-            }
+            moveLegsToStancePosition();
             break;
     }
 }
@@ -391,7 +393,7 @@ bool Ragnetto::runJoystickMode(unsigned long now)
         if (joystick.idle())
         {
             // joystick inside null zone: lower all the legs to stance position
-            // (unless they are alla already in stance position)
+            // (unless they are all already in stance position)
             bool at_leat_one_leg_not_at_rest = false;
             for (int legnum=0; legnum<NUM_LEGS; legnum++)
             {
@@ -416,7 +418,10 @@ bool Ragnetto::runJoystickMode(unsigned long now)
             }
             
             if (at_leat_one_leg_not_at_rest)
-                coordinatedMovement.start(now, configuration.phase_duration);
+            {
+                /* use a very fast phase duration for this "stopping" movement. */
+                coordinatedMovement.start(now, MIN_PHASE_DURATION);
+            }
         }
         else
         {
@@ -450,19 +455,24 @@ bool Ragnetto::runJoystickMode(unsigned long now)
 /* Prepare the next coordinated movement */
 void Ragnetto::setupNextPhase(unsigned long now)
 {
+    // half stride distance per phase
     float half_forward_mm_per_phase = (float)joystick.y * (float)configuration.phase_duration / 1000.0 * 0.5;
     float half_right_mm_per_phase = (float)joystick.x * (float)configuration.phase_duration / 1000.0 * 0.5;
+    // the same for rotation
     float half_rotation_deg_per_phase = (float)joystick.r * (float)configuration.phase_duration / 1000.0 * 0.5;
 
+    // full distance to cover each phase
     float distance_mm_per_phase = 2.0 * sqrtf(half_forward_mm_per_phase * half_forward_mm_per_phase
         + half_right_mm_per_phase * half_right_mm_per_phase);
-    
+    // the same for rotation
+    float rotation_deg_per_phase = 2.0 * abs(half_rotation_deg_per_phase);
+   
     uint16_t phaseDuration = configuration.phase_duration;
-    /* if the distance per phase is above the maximum (where out-of-reach errors begin to appear)
+    /* if the distance per phase is over the maximum (where out-of-reach errors begin to appear)
     stay at that maximum and instead lower the phase duration to compensate and reach the requested speed */
-    if ((distance_mm_per_phase > MAX_PHASE_DISTANCE) || (half_rotation_deg_per_phase > MAX_PHASE_ROTATION * 0.5))
+    if ((distance_mm_per_phase > MAX_PHASE_DISTANCE) || (rotation_deg_per_phase > MAX_PHASE_ROTATION))
     {
-        float normalization_factor = min(MAX_PHASE_DISTANCE / distance_mm_per_phase, MAX_PHASE_ROTATION * 0.5 / half_rotation_deg_per_phase);
+        float normalization_factor = min(MAX_PHASE_DISTANCE / distance_mm_per_phase, MAX_PHASE_ROTATION / rotation_deg_per_phase);
         // don't lower the phase duration below the absolute limit
         phaseDuration = (uint16_t) max(configuration.phase_duration * normalization_factor, MIN_PHASE_DURATION);
         // re-normalize distances to stay at maximum
@@ -500,6 +510,16 @@ void Ragnetto::setupNextPhase(unsigned long now)
     }
 
     coordinatedMovement.start(now, phaseDuration);
+}
+
+void Ragnetto::moveLegsToStancePosition()
+{
+    for (uint8_t legnum=0; legnum<NUM_LEGS; legnum++)
+    {
+        Point3d footPosition = Point3d(legs[legnum].baseFootPosition);
+        footPosition.z -= configuration.height_offset;
+        legs[legnum].moveTo(footPosition);
+    }
 }
 
 

@@ -12,6 +12,8 @@
 #define MODE_STANCE 0
 #define MODE_JOYSTICK 1
 
+#define STARTING_MODE MODE_JOYSTICK
+
 // movement types
 #define MOVEMENT_TYPE_LINEAR 0
 #define MOVEMENT_TYPE_UP_SLIDE_DOWN 1
@@ -166,6 +168,7 @@ class Ragnetto
 
     private:
     void commandError(char * commandText);
+    void moveLegsToStancePosition();
 };
 
 // ============ functions ===============
