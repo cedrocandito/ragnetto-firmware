@@ -63,7 +63,7 @@
 // if not defined they will be accepted from serial (usb) port
 #define BLUETOOTH_SERIAL
 
-// size of the buffer, including the end of string character.
+// size of the command buffer, including the end of string character.
 #define COMMAND_BUFFER_SIZE 32
 
 // transmit and receive pins for software serial
@@ -82,5 +82,9 @@
 // minimum time (in milliseconds) between error lines sent via serial
 // (if not limited they will clutter the port and cause delays)
 #define MIN_TIME_BETWEEN_ERRORS 100
+
+// if true Ragnetto accepts lines without checksum;
+// if false only lines terminated with a checksum are accepted.
+#define ALLOW_NO_CHECKSUM true
 
 #endif

@@ -2,12 +2,21 @@ Serial protocol
 ===============
 
 Lines are terminated by LF (0x0a).
-C;xxxxxxx   congiguration data
+
+Data from Ragnetto to client:
+
+C;xxxxxxx   configuration data
 I;xxxxxxx   information
 D;xxxxxxx   debug log
 E;xxxxxxx   error
 
-Commands:
+
+Commands from client to Ragnetto:
+
+Commands can be postfixed with "#<checksum>#".
+<checksum> is a 16-bit checksum (4 hex digits) of the preceding bytes.
+For example: J59;0;20#01C0#
+If ALLOW_NO_CHECKSUM is false, a checksum *must* be present.
 
 Txxx;yyy;vvv
   set trim value for joint yyy (0-2) of leg xxx (0-5) to vvv.
@@ -41,6 +50,9 @@ Jyyy;xxx;rrr
   Set joystick; drive using forward/backward speed yyy in (mm/sec, positive is
   forward), left/right speed xxx (in mm/sec, positive is right) and rotation
   speed rrr (in degrees/sec, positive is counterclockwise).
+
+Kyyy;xxx;rrr
+  As Jyyy;xxx;rrr, but values are 0-100 (100 represents the maximum allowed speed).
 
 Mxxx
   Set working mode to xxx:

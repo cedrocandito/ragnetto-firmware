@@ -179,10 +179,10 @@ void Ragnetto::process_input()
 
     while ((command = ragnetto_serial.receive_command()) != nullptr)
     {
-        char *params = command+1;
-
-        if (command != nullptr)
+        if (validateChecksum(command, ALLOW_NO_CHECKSUM))
         {
+            char *params = command+1;
+
             // ignore empty commands
             if (strlen(command) < 1)
                 return;
@@ -343,6 +343,10 @@ void Ragnetto::process_input()
                 ragnetto_serial.send_error(COMMAND_ERROR, command);
                 break;
             }
+        }
+        else
+        {
+            ragnetto_serial.send_error(CHECKSUM_ERROR, command);
         }
     }
 }
@@ -625,7 +629,7 @@ or a separator character is found. "string" is updated with the next position af
 void scanForNextSymbol(char * & string, char * destination_buffer, const uint8_t buffer_size)
 {
     int n=1;    // 1 byte is reserver for the ending \0
-    while (*string != '\0' && *string != SEPARATOR_CHAR && n<buffer_size)
+    while (*string != '\0' && *string != SEPARATOR_CHAR && *string != CHECKSUM_CHAR && n<buffer_size)
     {
         *destination_buffer++ = *string++;
         n++;
@@ -635,25 +639,25 @@ void scanForNextSymbol(char * & string, char * destination_buffer, const uint8_t
     *destination_buffer='\0';
 
     // if terminated by a separator character skip it
-    if (*string == SEPARATOR_CHAR)
+    if (*string == SEPARATOR_CHAR || *string == CHECKSUM_CHAR)
         string++;
 }
 
-/* Scans "string" until '\0' or the separator character are found. Convert the scanned characters
-to int and store into "number" (passed by reference).
+/* Scans "string" until '\0' or the separator/checksum characters are found. Converts the
+scanned characters to int and stores into "number" (passed by reference).
 "string" is updated with the next position after the separator (it will
 point to '\0' if there are no more characters to read). Returns true if at least one
-character was read (but the functions, which uses atoi(), just returns 0 if the string is not
+character was read (but the function, which uses atoi(), just returns 0 if the string is not
 a valid number). */
 bool scanForNextNumericField(char * & string, int &number)
 {
-    if (*string == '\0' || *string == SEPARATOR_CHAR)
+    if (*string == '\0' || *string == SEPARATOR_CHAR || *string == CHECKSUM_CHAR)
         return false;
 
-    char buf[7];   // 7 characters are enough for 16 bit numbers, sign synmbol and terminator
-    scanForNextSymbol(string,buf,sizeof(buf));
+    char buf[7];   // 7 characters are enough for 16 bit numbers, sign symbol and terminator
+    scanForNextSymbol(string, buf, sizeof(buf));
     number = atoi(buf);
-    return strlen(buf)>0;
+    return strlen(buf) > 0;
 }
 
 /* Scans "string" for "how_many_numbers" int's separated by SEPARATOR_CHAR; they will be stored
@@ -772,3 +776,82 @@ bool pointIn3dSpaceToJointAngles(const Point3d &p, const Leg &leg, float result_
 
     return true;
 }
+
+/* If the buffer ends with "#HHHH#" (where x is any character), the "HHHH" string is extracted
+and parsed as a hex unsigned 16-bit integer. The a checksum is calculated on the
+previous bytes of the buffer.
+If the calculated checksum matches the extracted 16 bit integer, the first "#" is
+replaced with a NUL and a true is returned. If not (checksums don't match)
+a false is returned and the buffer is left untouched.
+If the buffer doesn't contain a checksum the function returns true if allowNoChecksum
+is true or false if allowNoChecksum is false. */ 
+bool validateChecksum(char * buffer, bool allowNoChecksum)
+{
+    uint8_t l = strlen(buffer);
+    char * checksumBlockPosition = buffer + l - 6;
+    if (l >=6 && *checksumBlockPosition == CHECKSUM_CHAR && *(checksumBlockPosition+5) == CHECKSUM_CHAR)
+    {
+        // read checksum field
+        uint16_t found_checksum = parseHex16bit(checksumBlockPosition+1);
+        uint16_t calculated_checksum = calculateChecksum(buffer, l - 6);
+        if (calculated_checksum == found_checksum)
+        {
+            *checksumBlockPosition = '\0';
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    else
+    {
+        return allowNoChecksum;
+    }
+}
+
+/* Parses a single character into a 4 bit value. If the character
+is not a valid hex character returns -1. */
+int8_t parseHexHalfByte(char c)
+{
+    if (c>='0' && c<='9')
+        return c-'0';
+    else if (c>='A' && c<='F')
+        return c-'A'+10;
+    else if (c>='a' && c<='f')
+        return c-'a'+10;
+    else
+        return -1;
+}
+
+/* Parses a 4 character string into a 16 bit unsigned int.
+If the buffer doesn't contain a valid 4-character hex number the
+function will return 0. */
+uint16_t parseHex16bit(char *buffer)
+{
+    uint16_t number = 0;
+    for (uint8_t i=0; i<4; i++)
+    {
+        char c = *buffer++;
+        int16_t halfbyte = parseHexHalfByte(c);
+        if (halfbyte == -1)
+            return 0;
+        number |= (halfbyte << ((3-i)*4));
+    }
+    return number;
+}
+
+/* Calculates a 16 bit checksum on a string buffer, up to the indicated
+number of characters. */
+uint16_t calculateChecksum(char * buffer, uint8_t size)
+{
+    uint16_t checksum = 0;
+    unsigned char b;
+    while (((b = *buffer++) != '\0') && (size-- > 0))
+    {
+        checksum += b;
+    }
+    return checksum;
+}
+
+
