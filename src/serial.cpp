@@ -2,7 +2,7 @@
 #include "serial.h"
 #include "logging.h"
 #include "ragnetto.h"
-
+#include "checksum.h"
 
 #ifdef BLUETOOTH_SERIAL
 SoftwareSerial ss(SOFTWARESERIAL_RX_PIN, SOFTWARESERIAL_TX_PIN);
@@ -45,22 +45,34 @@ void RagnettoSerial::flush()
     #endif
 }
 
-size_t RagnettoSerial::write(uint8_t x)
+size_t internal_write(uint8_t x)
 {
     #ifdef BLUETOOTH_SERIAL
     return ss.write(x);
     #else
     return Serial.write(x);
-    #endif  
+    #endif
 }
 
-size_t RagnettoSerial::write(const uint8_t* pointer, size_t size)
+size_t RagnettoSerial::write(uint8_t x)
 {
-    #ifdef BLUETOOTH_SERIAL
-    return ss.write(pointer, size);
-    #else
-    return Serial.write(pointer, size);
-    #endif
+    if (x == '\r')
+    {
+        
+        internal_write(CHECKSUM_CHAR);
+        uint16_t tmpchecksum = checksum;
+        char hexchecksum[5];
+        formatChecksum(tmpchecksum,hexchecksum);
+        print(hexchecksum);
+        internal_write(CHECKSUM_CHAR);
+        checksum = 0;
+    }
+    else
+    {
+        checksum += x;
+    }
+
+    return internal_write(x);
 }
 
 RagnettoSerial::operator bool()

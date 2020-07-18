@@ -37,8 +37,7 @@ public:
     virtual int available();
 	virtual void flush();
 	virtual size_t write(uint8_t);
-	virtual size_t write(const uint8_t*, size_t);
-    virtual int peek();
+	virtual int peek();
 	using Print::write;
     operator bool();
     /*
@@ -63,6 +62,7 @@ private:
     char command_buffer[COMMAND_BUFFER_SIZE];
     uint8_t buffer_index = 0;
     unsigned long timestamp_next_error_can_be_sent = 0;
+    uint16_t checksum = 0;
 };
 
 extern RagnettoSerial ragnetto_serial;

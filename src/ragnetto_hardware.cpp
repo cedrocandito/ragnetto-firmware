@@ -32,7 +32,7 @@ void setup_pwm_controllers()
     for (uint8_t i = 0; i < NUM_PWM_CONTROLLERS; i++)
     {
         ragnetto_serial.start_line(LINE_TYPE_INFO);
-        ragnetto_serial.print("Initializing PWM controller at address ");
+        ragnetto_serial.print(F("Initializing PWM controller at address "));
         ragnetto_serial.print(PWM_BASE_ADDR + i);
         ragnetto_serial.end_line();
         pwm[i] = Adafruit_PWMServoDriver(PWM_BASE_ADDR + i);

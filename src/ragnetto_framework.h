@@ -38,9 +38,6 @@
 // separator character for commands and responses
 #define SEPARATOR_CHAR  ';'
 
-// checksum character for commands and responses
-#define CHECKSUM_CHAR  '#'
-
 
 // a point in 2d space
 class Point3d
@@ -200,26 +197,5 @@ a point in space. Coordinates are relative to attachment point of the leg, angle
 Returns true if there is a solution, false if not. */
 bool pointIn3dSpaceToJointAngles(const Point3d &p, const Leg &leg, float result_angles[]);
 
-/* Calculates a 16 bit checksum on a string buffer. */
-uint16_t calculateChecksum(char * buffer, uint8_t size);
-
-/* If the buffer ends with "#HHHH#" (where x is any character), the "HHHH" string is extracted
-and parsed as a hex unsigned 16-bit integer. The a checksum is calculated on the
-previous bytes of the buffer.
-If the calculated checksum matches the extracted 16 bit integer, the first "#" is
-replaced with a NUL and a true is returned. If not (checksums don't match)
-a false is returned and the buffer is left untouched.
-If the buffer doesn't contain a checksum the function returns true if allowNoChecksum
-is true or false if allowNoChecksum is false. */ 
-bool validateChecksum(char * buffer, bool allowNoChecksum);
-
-/* Parses a single character into a 4 bit value. If the character
-is not a valid hex character returns -1. */
-int8_t parseHexHalfByte(char c);
-
-/* Parses a 4 character string into a 16 bit unsigned int.
-If the buffer doesn't contain a valid 4-character hex number the
-function will return 0. */
-uint16_t parseHex16bit(char *buffer);
 
 #endif
