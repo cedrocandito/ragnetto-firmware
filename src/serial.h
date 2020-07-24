@@ -23,7 +23,6 @@
 #endif
 
 
-
 /*
 Wrapper for Serial (USB) and SoftwareSerial (Bluetooth module).
 Contains methods for reading commands and sending responses and errors.
@@ -63,6 +62,9 @@ private:
     uint8_t buffer_index = 0;
     unsigned long timestamp_next_error_can_be_sent = 0;
     uint16_t checksum = 0;
+    // true when the previous char was a CR
+    char previous_was_cr;
+    void flush_checksum();
 };
 
 extern RagnettoSerial ragnetto_serial;
