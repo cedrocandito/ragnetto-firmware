@@ -10,6 +10,11 @@ I;xxxxxxx   information
 D;xxxxxxx   debug log
 E;xxxxxxx   error
 
+Legs are numberes from from left, counterclockwise, starting at 0:
+       0  5
+     1      4
+       2  3
+
 
 Commands from client to Ragnetto:
 
