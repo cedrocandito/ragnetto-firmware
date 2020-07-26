@@ -1,11 +1,13 @@
 #include <Arduino.h>
-#include "serial.h"
 #include "logging.h"
 #include "ragnetto.h"
 #include "checksum.h"
 
 #ifdef BLUETOOTH_SERIAL
-NeoSWSerial ss(SOFTWARESERIAL_RX_PIN, SOFTWARESERIAL_TX_PIN);
+    #include <AltSoftSerial.h>
+    AltSoftSerial ss;
+#else
+    #include "serial.h"
 #endif
 
 
@@ -182,7 +184,7 @@ void RagnettoSerial::send_debug(const __FlashStringHelper * message)
 }
 
 /* Initialize serial port. */
-RagnettoSerial::RagnettoSerial()
+void RagnettoSerial::begin()
 {
     #ifdef BLUETOOTH_SERIAL
     ss.begin(SOFTWARE_SERIAL_BAUDRATE);
@@ -190,7 +192,7 @@ RagnettoSerial::RagnettoSerial()
     Serial.begin(HARDWARE_SERIAL_BAUDRATE);
     while(!Serial)
     {
-        delay(100);
+        delay(2);
     }
     #endif
 }

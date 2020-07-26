@@ -17,12 +17,6 @@
 #define LINE_TYPE_SEPARATOR_CHARACTER ';'
 
 
-#ifdef BLUETOOTH_SERIAL
-    #include <NeoSWSerial.h>
-    extern NeoSWSerial ss;
-#endif
-
-
 /*
 Wrapper for Serial (USB) and SoftwareSerial (Bluetooth module).
 Contains methods for reading commands and sending responses and errors.
@@ -30,7 +24,7 @@ Contains methods for reading commands and sending responses and errors.
 class RagnettoSerial : public Stream
 {
 public:
-    RagnettoSerial();
+    void begin();
 	virtual int read();
 	virtual int availableForWrite();
     virtual int available();
