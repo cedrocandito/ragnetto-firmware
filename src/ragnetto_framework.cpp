@@ -151,7 +151,22 @@ bool Leg::moveTo(const Point3d &point)
     }
     else
     {
-        ragnetto_serial.send_error(F("Leg position not reachable"));
+        if (ragnetto_serial.send_error(F("Leg position not reachable")))
+        {
+            #ifdef LOGGING_ENABLED
+            ragnetto_serial.start_line(LINE_TYPE_DEBUG);
+            ragnetto_serial.print(F("Leg "));
+            ragnetto_serial.print(leg_id);
+            ragnetto_serial.print(F(" ("));
+            ragnetto_serial.print(point.x);
+            ragnetto_serial.print(',');
+            ragnetto_serial.print(point.y);
+            ragnetto_serial.print(',');
+            ragnetto_serial.print(point.z);
+            ragnetto_serial.print(')');
+            ragnetto_serial.end_line();
+            #endif
+        }
     }
     
     return ok;
@@ -471,9 +486,15 @@ void Ragnetto::setupNextPhase(unsigned long now)
     // full distance to cover each phase
     float distance_mm_per_phase = 2.0 * sqrtf(half_forward_mm_per_phase * half_forward_mm_per_phase
         + half_right_mm_per_phase * half_right_mm_per_phase);
+    // keep it non zero to avoid problems in divisions
+    if (distance_mm_per_phase < 0.1)
+        distance_mm_per_phase = 0.1;
+    
     // the same for rotation
     float rotation_deg_per_phase = 2.0 * abs(half_rotation_deg_per_phase);
-   
+    if (rotation_deg_per_phase < 0.1)
+        rotation_deg_per_phase = 0.1;
+
     uint16_t phaseDuration = configuration.phase_duration;
     /* if the distance per phase is over the maximum (where out-of-reach errors begin to appear)
     stay at that maximum and instead lower the phase duration to compensate and reach the requested speed */

@@ -67,8 +67,9 @@
 #define COMMAND_BUFFER_SIZE 32
 
 // transmit and receive pins for software serial
-#define SOFTWARESERIAL_TX_PIN 3
-#define SOFTWARESERIAL_RX_PIN 2
+// (not used right now: AltSoftSerial requires them to be 9, 8)
+#define SOFTWARESERIAL_TX_PIN 9
+#define SOFTWARESERIAL_RX_PIN 8
 
 // baudrate for serial port (usb)
 #define HARDWARE_SERIAL_BAUDRATE 9600
@@ -77,7 +78,7 @@
 #define SOFTWARE_SERIAL_BAUDRATE 9600
 
 // enable verbose info? (comment to disable)
-//#define LOGGING_ENABLED
+#define LOGGING_ENABLED
 
 // minimum time (in milliseconds) between error lines sent via serial
 // (if not limited they will clutter the port and cause delays)
