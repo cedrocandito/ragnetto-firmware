@@ -154,7 +154,7 @@ class Ragnetto
     // constructor
     Ragnetto();
 
-    // Method to put in mail loop: read commands and move the robot
+    // Method to put in main loop: read commands and move the robot
     void run();
 
     // the following methods should be private, but making them public is useful
