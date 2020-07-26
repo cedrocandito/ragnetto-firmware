@@ -81,7 +81,7 @@
 
 // minimum time (in milliseconds) between error lines sent via serial
 // (if not limited they will clutter the port and cause delays)
-#define MIN_TIME_BETWEEN_ERRORS 100
+#define MIN_TIME_BETWEEN_ERRORS 200
 
 // if true Ragnetto accepts lines without checksum;
 // if false only lines terminated with a checksum are accepted.
