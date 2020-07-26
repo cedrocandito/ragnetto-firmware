@@ -18,8 +18,8 @@
 
 
 #ifdef BLUETOOTH_SERIAL
-    #include <SoftwareSerial.h>
-    extern SoftwareSerial ss;
+    #include <NeoSWSerial.h>
+    extern NeoSWSerial ss;
 #endif
 
 

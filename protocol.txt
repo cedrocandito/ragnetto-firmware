@@ -39,12 +39,13 @@ W
 C
   Show configuration.
   Custom data in output is a line of semicolon-separated numbers starting with "C;":
-  0-17: trim for servos 1-18
-  18: height offset
-  19: leg lift height
-  20: walking phase (step) duration
-  21: leg lift duration %
-  22: leg drop duration %
+  0: current command mode
+  1-18: trim for servos 1-18
+  19: height offset
+  20: leg lift height
+  21: walking phase (step) duration
+  22: leg lift duration %
+  23: leg drop duration %
 
 Jyyy;xxx;rrr
   Set joystick; drive using forward/backward speed yyy in (mm/sec, positive is
@@ -56,9 +57,11 @@ Kyyy;xxx;rrr
 
 Mxxx
   Set working mode to xxx:
-  -1 = calibration,
-  0 = stance,
-  1 = joystick
+  0 = calibration 1
+  1 = calibration 2
+  2 = stance
+  3 = joystick
+  
 
 Qxxx;yyy
   Set duration of leg lift (xxx) and drop (yyy) as percent of the leg

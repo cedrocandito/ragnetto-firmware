@@ -289,6 +289,8 @@ void Ragnetto::process_input()
                 case COMMAND_SHOW_CONFIGURATION:
                 {
                     ragnetto_serial.start_line(LINE_TYPE_CONFIG);
+                    ragnetto_serial.print(mode);
+                    ragnetto_serial.print(SEPARATOR_CHAR);
                     for (uint8_t leg = 0; leg < NUM_LEGS; leg++)
                     {
                         for (uint8_t joint = 0; joint < SERVOS_PER_LEG; joint++)

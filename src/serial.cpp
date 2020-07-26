@@ -5,7 +5,7 @@
 #include "checksum.h"
 
 #ifdef BLUETOOTH_SERIAL
-SoftwareSerial ss(SOFTWARESERIAL_RX_PIN, SOFTWARESERIAL_TX_PIN);
+NeoSWSerial ss(SOFTWARESERIAL_RX_PIN, SOFTWARESERIAL_TX_PIN);
 #endif
 
 
@@ -111,7 +111,7 @@ void RagnettoSerial::flush_checksum()
 RagnettoSerial::operator bool()
 {
     #ifdef BLUETOOTH_SERIAL
-    return ss;
+    return true;
     #else
     return Serial;
     #endif
@@ -186,10 +186,6 @@ RagnettoSerial::RagnettoSerial()
 {
     #ifdef BLUETOOTH_SERIAL
     ss.begin(SOFTWARE_SERIAL_BAUDRATE);
-    while(!ss)
-    {
-        delay(100);
-    }
     #else
     Serial.begin(HARDWARE_SERIAL_BAUDRATE);
     while(!Serial)

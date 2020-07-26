@@ -7,10 +7,10 @@
 #include "ragnetto.h"
 
 // working modes
-#define MODE_CALIBRATION -1
-#define MODE_CALIBRATION2 -2
-#define MODE_STANCE 0
-#define MODE_JOYSTICK 1
+#define MODE_CALIBRATION 0
+#define MODE_CALIBRATION2 1
+#define MODE_STANCE 2
+#define MODE_JOYSTICK 3
 
 #define STARTING_MODE MODE_JOYSTICK
 
